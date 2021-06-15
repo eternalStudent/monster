@@ -76,7 +76,7 @@ void OpenGLClearScreen() {
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void OpenGLRender(GLuint texture, Rectanglef crop, Position2f pos, pixels pwidth, pixels pheight, int32 flip){
+void OpenGLRender(GLuint texture, Box2 crop, Position2 pos, pixels pwidth, pixels pheight, int32 flip){
 	float32 iwwidth = 1.0f / windowDim.width;
 	float32 iwheight = 1.0f / windowDim.height;
 

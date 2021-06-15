@@ -8,7 +8,7 @@ struct Entity {
         HitBox hitBox;
         struct {
             union {
-                Position2f pos;
+                Position2 pos;
                 struct { pixels x, y; };
             };
             pixels radius, height;          
@@ -19,7 +19,7 @@ struct Entity {
     TextureHandle texture;
 
     // can move
-    Velocity2f velocity;
+    Velocity2 velocity;
 
     // changing sprite/animation
     milliseconds timeSpentInState;
@@ -261,12 +261,12 @@ void GameUpdateAndRender(uint32 keysPressed, milliseconds deltaTime) {
 		Tile tile = sprites[tileId];
 		Render(
 			tile.tileset, tile.crop,
-			Position2f{ x * 64.0f, y * 64.0f },
+			Position2{ x * 64.0f, y * 64.0f },
 			64.0f, 64.0f,
 			0);
 	}
 
-	Rectanglef crop;
+	Box2 crop;
 	crop.x0 = player.stateColumn * 0.25f;
 	crop.y0 = player.stateRow * 0.25f;
 	crop.x1 = (player.stateColumn+1) * 0.25f;

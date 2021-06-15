@@ -1,9 +1,9 @@
-struct Box {
+struct UIBox {
     union{
         HitBox hitBox;
         struct {
             union {
-                Position2f pos;
+                Position2 pos;
                 struct { pixels x, y; };
             };
             pixels radius, height;            
@@ -24,13 +24,13 @@ struct Box {
 #define I 			TileCount+1  // 23
 #define MM 			I+3			 // 26
 
-static Box boxes[BoxCount+1] = {};
+static UIBox boxes[BoxCount+1] = {};
 static int32 renderOrder[BoxCount] = {};
 static int32 boxIndex = 0;
 static int32 selectedIndex = 0;
 
 static HitBox originalPos;
-static Position2f grabPos;
+static Position2 grabPos;
 // TODO: these should be flags
 static bool isGrabbing = false;
 static bool isResizing = false;
@@ -42,7 +42,7 @@ static TextureHandle neutral;
 static TextureHandle grey1;
 static TextureHandle grey2;
 
-static Position2f cameraPos;
+static Position2 cameraPos;
 
 void Win32SetCursorToMove();
 void Win32SetCursorToArrow();
@@ -67,7 +67,7 @@ void EditorInit() {
 	grey2 = GenerateTextureFromRGBA(0x88bbbbbb);
 
 	for(int32 i=1; i<=TileCount; i++){
-		Box* box = &boxes[i];
+		UIBox* box = &boxes[i];
 		box->pos.x = (i % 2) ? 34.0f : -34.0f;
 		box->pos.y = (((i-1)/2) * 68.0f) + 24.0f;
 		box->radius = 32.0f;
@@ -128,40 +128,40 @@ void EditorInit() {
 	renderOrder[I+2]=I+4;
 }
 
-inline bool IsInsideHitBox(HitBox hitBox, Position2f pos){
+inline bool IsInsideHitBox(HitBox hitBox, Position2 pos){
 	return (hitBox.x-hitBox.radius <= pos.x && pos.x <= hitBox.x+hitBox.radius) &&
 		(hitBox.y <= pos.y && pos.y <= hitBox.y+hitBox.height);
 }
 
-inline HitBox GetAbsolutePosition(Box box){
+inline HitBox GetAbsolutePosition(UIBox box){
 	if (box.parent == 0)
 		return box.hitBox;
 
-	Position2f parentPos = GetAbsolutePosition(boxes[box.parent]).pos;
+	Position2 parentPos = GetAbsolutePosition(boxes[box.parent]).pos;
 	HitBox hitBox = box.hitBox;
-	hitBox.pos = Position2f{parentPos.x + box.x, parentPos.y + box.y};
+	hitBox.pos = Position2{parentPos.x + box.x, parentPos.y + box.y};
 	return hitBox;
 }
 
-inline Position2f GetRelativePosition(Position2f pos, Box box){
-	Position2f base = GetAbsolutePosition(boxes[box.parent]).pos;
-	return Position2f{pos.x - base.x, pos.y - base.y};
+inline Position2 GetRelativePosition(Position2 pos, UIBox box){
+	Position2 base = GetAbsolutePosition(boxes[box.parent]).pos;
+	return Position2{pos.x - base.x, pos.y - base.y};
 }
 
-inline bool IsInsideBox(Box box, Position2f pos){
+inline bool IsInsideBox(UIBox box, Position2 pos){
 	return IsInsideHitBox(GetAbsolutePosition(box), pos);
 }
 
-inline bool IsInBottomRight(HitBox hitBox, Position2f pos){
+inline bool IsInBottomRight(HitBox hitBox, Position2 pos){
 	return hitBox.x+hitBox.radius-4 <= pos.x && pos.y <= hitBox.y+4;
 }
 
-inline bool IsInBottomRight(Box box, Position2f pos){
+inline bool IsInBottomRight(UIBox box, Position2 pos){
 	HitBox hitBox = GetAbsolutePosition(box);
 	return IsInBottomRight(hitBox, pos);
 }
 
-inline int32 GetBoxIndexByPos(Position2f cursorPos){
+inline int32 GetBoxIndexByPos(Position2 cursorPos){
 	for(int32 i = 0; i < BoxCount; i++){
 		if (IsInsideBox(boxes[renderOrder[i]], cursorPos)) {
 			return renderOrder[i];
@@ -170,9 +170,9 @@ inline int32 GetBoxIndexByPos(Position2f cursorPos){
 	return 0;
 }
 
-void SetPosition(Box* box, Position2f newPos){
+void SetPosition(UIBox* box, Position2 newPos){
 	if (!box->parent){ box->pos = newPos; return; } 
-	Box parent = boxes[box->parent];
+	UIBox parent = boxes[box->parent];
 
 	if (newPos.x < -parent.radius+box->radius) box->x = -parent.radius+box->radius;
 	else if (-box->radius+parent.radius < newPos.x) box->x = -box->radius+parent.radius;
@@ -196,14 +196,8 @@ void MoveToFront(int32 boxId){
 		if (boxes[i].parent == boxId) MoveToFront(i);
 }
 
-void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2f cursorPos) {
+void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2 cursorPos) {
 	ClearScreen();
-
-	Rectanglef unit;
-	unit.x0 = 0.0f;
-	unit.y0 = 0.0f;
-	unit.x1 = 1.0f;
-	unit.y1 = 1.0f;
 
 	cameraPos.x = (boxes[I+4].pos.x + ((W_-X_) * 2.0f)) * 0.25f;// * 64.0f;
 	cameraPos.y = boxes[I+4].pos.y * 0.25f;// * 64.0f;
@@ -211,7 +205,7 @@ void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2f cursorPo
 	bool isBottomRight = false;
 	if (!isResizing && !isGrabbing)
 		boxIndex = GetBoxIndexByPos(cursorPos);
-	Box* box = &(boxes[boxIndex]);
+	UIBox* box = &(boxes[boxIndex]);
 	if (boxIndex == 0) {
 		Win32SetCursorToArrow();
 	}
@@ -261,14 +255,14 @@ void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2f cursorPo
 
 	if (isGrabbing && 
 			(cursorPos.x != grabPos.x || cursorPos.y != grabPos.y)){
-		Position2f newPos;
+		Position2 newPos;
 		newPos.x = originalPos.x + cursorPos.x - grabPos.x;
 		newPos.y = originalPos.y + cursorPos.y - grabPos.y;
 		SetPosition(box, newPos);
 	}
 
 	if (isResizing){
-		Position2f relativeCursorPos = GetRelativePosition(cursorPos, *box);
+		Position2 relativeCursorPos = GetRelativePosition(cursorPos, *box);
 		box->y = relativeCursorPos.y;
 		pixels left = originalPos.x-originalPos.radius;
 		box->x = (relativeCursorPos.x + left)*0.5f;
@@ -310,20 +304,20 @@ void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2f cursorPo
 
 	for(int32 i=BoxCount-1; i>=0; i--){
 		int32 itBoxId = renderOrder[i];
-		Box itBox = boxes[itBoxId];
-		Position2f pos = GetAbsolutePosition(itBox).pos;
+		UIBox itBox = boxes[itBoxId];
+		Position2 pos = GetAbsolutePosition(itBox).pos;
 		int32 tileId = itBox.tileId;
 		Tile tile;
 		if (itBox.tileId){
 			tile = sprites[tileId];
 		}
 		else{
-			tile.crop = unit;
+			tile.crop = BOX2_UNIT();
 			tile.solid = itBox.solid; 
 		}
 		if (itBoxId == boxIndex && isPressed){
 			Render(
-				black, unit,
+				black, BOX2_UNIT(),
 				pos,
 				2*itBox.radius, itBox.height,
 				0);

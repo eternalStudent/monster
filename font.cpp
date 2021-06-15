@@ -18,7 +18,7 @@ PreRenderedFont PreRenderFont(const char* filePath){
 
 // NOTE: adopted from stbtt_GetBakedQuad
 void PrintText(PreRenderedFont font, float32 x, float32 y, char* text){
-	Rectanglef crop;
+	Box2 crop;
 	while (*text) {
 		if (*text >= 32 && *text < 128) {
 			float32 ipw = 1.0f / 512, iph = 1.0f / 512; // NOTE: division takes longer than multipication, this runs division at compile time.
@@ -40,7 +40,7 @@ void PrintText(PreRenderedFont font, float32 x, float32 y, char* text){
 
 			Render(
 				font.texture, crop,
-				Vector2f{ printx, printy },
+				Vector2{ printx, printy },
 				(pixels)(bakedchar->x1 - bakedchar->x0),
 				(pixels)(bakedchar->y1 - bakedchar->y0),
 				0);

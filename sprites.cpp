@@ -10,7 +10,7 @@ struct Sprite{
 		TextureHandle solid;
 		TextureHandle texture;
 	};
-	Rectanglef crop;
+	Box2 crop;
 };
 
 // TODO: probably Tile would have to be distinct from Sprite

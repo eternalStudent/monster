@@ -56,7 +56,7 @@ static PreRenderedFont debugFont;
 
 #include "sprites.cpp"
 
-#define Game 1
+#define Game 0
 #if Game
 #include "game.cpp"
 #define Init 								GameInit
@@ -182,7 +182,7 @@ HWND Win32CreateWindowFullScreen(HINSTANCE hInstance, WNDPROC windowCallBack, Di
 #define RDN  3
 #define RUP  4
 
-Position2f Win32GetCursorPosition(HWND window){
+Position2 Win32GetCursorPosition(HWND window){
 	POINT cursorPos;
 	GetCursorPos(&cursorPos);
 	RECT clientRect;
@@ -190,7 +190,7 @@ Position2f Win32GetCursorPosition(HWND window){
 	pixels x = (pixels)cursorPos.x-clientRect.left;
 	int32 height = clientRect.bottom - clientRect.top;
 	pixels y = (pixels)(height - (cursorPos.y - clientRect.left) - 1);
-	return Position2f{x, y};
+	return Position2{x, y};
 }
 
 void Win32ProcessPendingMessages(HWND window, uint32* keysPressed, MouseEventQueue* mouseEventQueue)
@@ -382,7 +382,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 #if Game
 		GameUpdateAndRender(keysPressed, deltaTime);
 #else 
-		Position2f cursorPos = Win32GetCursorPosition(window);
+		Position2 cursorPos = Win32GetCursorPosition(window);
 		EditorUpdateAndRender(&mouseEventQueue, cursorPos);
 #endif
 		
