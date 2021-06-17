@@ -5,7 +5,6 @@
 #include <emmintrin.h>
 #include <memory.h>
 
-// include my version of stdint, stdef and sys/types
 #include "types.h"
 
 // define ssize and set arena-allocator as the allocator
@@ -27,9 +26,7 @@ static Arena arena;
 
 // file-formats
 #include "bitmap.cpp"
-// TODO: write my own version of truetype library
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "stb_truetype.h"
+#include "truetype.cpp"
 
 #include "win32io.cpp"
 #define LoadText 							Win32LoadText
@@ -51,7 +48,7 @@ static Dimensions2i windowDim;
 #define Pixelated							GL_NEAREST
 
 #include "font.cpp"
-static PreRenderedFont debugFont;
+static BakedFont debugFont;
 #define DebugPrintText(x, y, text)			PrintText(debugFont, x, y, text)
 
 #include "sprites.cpp"
@@ -353,7 +350,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 	if (!Win32InitOpenGL(window)) return -1;
 	OpenGLSetVisibleArea();
 	OpenGLCreateProgram();
-	debugFont = PreRenderFont("times.ttf");
+	debugFont = BakeFont("times.ttf");
 	
 	//int win32RefreshRate = GetDeviceCaps(context, VREFRESH);
 	//float32 gameUpdateHz = (float32)((win32RefreshRate > 1) ? win32RefreshRate : 60);
