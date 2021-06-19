@@ -76,6 +76,36 @@ void OpenGLClearScreen() {
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
+void OpenGLRender_Internal(GLuint texture, 	float32* vertices, GLsizeiptr size) {
+	GLuint buffersHandle;
+	glGenBuffers(1, &buffersHandle);
+	glBindBuffer(GL_ARRAY_BUFFER, buffersHandle);
+	glBufferData(GL_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
+
+	GLuint verticesHandle;
+	glGenVertexArrays(1, &verticesHandle);
+	glBindVertexArray(verticesHandle);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float32), NULL);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glUseProgram(program);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glUniform1i(glGetUniformLocation(program, "image"), 0);
+
+	glBindVertexArray(verticesHandle);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindVertexArray(0);
+
+	glDeleteVertexArrays(1, &verticesHandle);
+	glDeleteBuffers(1, &buffersHandle);
+} 
+
 void OpenGLRender(GLuint texture, Box2 crop, Position2 pos, pixels pwidth, pixels pheight, int32 flip){
 	float32 iwwidth = 1.0f / windowDim.width;
 	float32 iwheight = 1.0f / windowDim.height;
@@ -101,31 +131,33 @@ void OpenGLRender(GLuint texture, Box2 crop, Position2 pos, pixels pwidth, pixel
 		center + radius, bottom,           rightTex, bottomTex    // bottom-right
 	};
 
-	GLuint buffersHandle;
-	glGenBuffers(1, &buffersHandle);
-	glBindBuffer(GL_ARRAY_BUFFER, buffersHandle);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	OpenGLRender_Internal(texture, vertices, sizeof(vertices));
+}
 
-	GLuint verticesHandle;
-	glGenVertexArrays(1, &verticesHandle);
-	glBindVertexArray(verticesHandle);
+void OpenGLRenderBox2(GLuint texture, Box2 crop, Box2 pos){
+	float32 iwwidth = 1.0f / windowDim.width;
+	float32 iwheight = 1.0f / windowDim.height;
 
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float32), NULL);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
+	float32 x0 = (2.0f * pos.x0 * iwwidth) - 1;
+	float32 y0 = (2.0f * pos.y0 * iwheight) - 1;
+	float32 x1 = (2.0f * pos.x1 * iwwidth) - 1;
+	float32 y1 = (2.0f * pos.y1 * iwheight) - 1;
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glUseProgram(program);
+	float32 bottomTex = crop.y1;
+	float32 topTex = crop.y0;
+	float32 rightTex = crop.x1;
+	float32 leftTex = crop.x0;
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glUniform1i(glGetUniformLocation(program, "image"), 0);
+	float32 vertices[] = {
+		// pos            // tex
+		x1, y0,           rightTex, bottomTex,   // bottom-right
+		x0, y1,           leftTex, topTex,       // top-left
+		x0, y0,           leftTex, bottomTex,    // bottom-left
 
-	glBindVertexArray(verticesHandle);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-	glBindVertexArray(0);
+		x0, y1,           leftTex, topTex,       // top-left
+		x1, y1,           rightTex, topTex,      // top-right
+		x1, y0,           rightTex, bottomTex    // bottom-right
+	};
 
-	glDeleteVertexArrays(1, &verticesHandle);
-	glDeleteBuffers(1, &buffersHandle);
+	OpenGLRender_Internal(texture, vertices, sizeof(vertices));
 }

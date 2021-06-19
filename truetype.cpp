@@ -157,14 +157,14 @@ buf get_subr(buf idx, int n) {
 }
 
 struct FontInfo {
-   byte*  data;              // pointer to .ttf file
-   int32  fontstart;         // offset of start of font
+   byte*  data;                // pointer to .ttf file
+   int32  fontstart;           // offset of start of font
 
-   int32 numGlyphs;                     // number of glyphs, needed for range checking
+   int32 numGlyphs;            // number of glyphs, needed for range checking
 
    int32 loca,head,glyf,hhea,hmtx,kern,gpos,svg; // table locations as offset from start of .ttf
-   int32 index_map;                     // a cmap mapping for our chosen character encoding
-   int32 indexToLocFormat;              // format needed to map from glyph index to glyph
+   int32 index_map;            // a cmap mapping for our chosen character encoding
+   int32 indexToLocFormat;     // format needed to map from glyph index to glyph
 
    buf cff;                    // cff font data
    buf charstrings;            // the charstring index

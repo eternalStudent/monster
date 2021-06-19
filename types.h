@@ -30,14 +30,14 @@ typedef uint64_t uint64;
 typedef float float32;
 typedef double float64;
 
-inline float32 INF32(){
-    union{uint32 u; float32 f;} data;
+inline float32 INF32() {
+    union {uint32 u; float32 f;} data;
     data.u = 0x7f800000;
     return data.f;
 }
 
-inline float32 M_INF32(){
-    union{uint32 u; float32 f;} data;
+inline float32 M_INF32() {
+    union {uint32 u; float32 f;} data;
     data.u = 0xff800000;
     return data.f;
 }
@@ -46,52 +46,34 @@ inline float32 M_INF32(){
 /*      GEOMETRY        */
 //----------------------//
 
-union Point2{
-    struct{
-        float32 x, y;
-    };
-    struct{
-        float32 width, height;
-    };
+union Point2 {
+    struct {float32 x, y;};
+    struct {float32 width, height;};
     float32 e[2];
 };
 typedef Point2 Dimensions2;
 
-union Point3{
-    struct{
-        float32 x, y, z;
-    };
-    struct{
-        float32 r, g, b;
-    };
-    struct{
-        float32 width, height, depth;
-    };
+union Point3 {
+    struct {float32 x, y, z;};
+    struct {float32 r, g, b;};
+    struct {float32 width, height, depth;};
     float32 e[3];
 };
 typedef Point3 Dimensions3;
 
-union Point2i{
-    struct{
-        int32 x, y;
-    };
-    struct{
-        int32 width, height;
-    };
+union Point2i {
+    struct {int32 x, y;};
+    struct {int32 width, height;};
     int32 e[2];
 };
 typedef Point2i Dimensions2i;
 
-union Box2{
-    struct{
-        Point2 p0, p1;
-    };
-    struct{
-        float32 x0, y0, x1, y1;
-    };
+union Box2 {
+    struct {Point2 p0, p1;};
+    struct {float32 x0, y0, x1, y1;};
 };
 
-inline Box2 BOX2_UNIT(){
+inline Box2 BOX2_UNIT() {
     Box2 unit;
     unit.x0 = 0.0f;
     unit.y0 = 0.0f;
@@ -100,31 +82,41 @@ inline Box2 BOX2_UNIT(){
     return unit;
 }
 
-union Box3{
-    struct{
-        Point2 p0, p1, p2;
-    };
-    struct{
-        float32 x0, y0, x1, y1, z0, z1;
-    };
+inline bool IsInsideBox(Box2 box, Point2 pos) {
+    return (box.x0 <= pos.x && pos.x <= box.x1) &&
+        (box.y0 <= pos.y && pos.y <= box.y1);
+}
+
+inline Box2 BOX2(float32 x0, float32 y0, float32 x1, float32 y1) {
+    Box2 result;
+    result.x0 = x0;
+    result.y0 = y0;
+    result.x1 = x1;
+    result.y1 = y1;
+    return result;
+}
+
+inline Box2 Box_Move(Box2 box, Point2 p) {
+    return BOX2(box.x0+p.x, box.y0+p.y, box.x1+p.x, box.y1+p.y);
+}
+
+union Box3 {
+    struct {Point2 p0, p1, p2;};
+    struct {float32 x0, y0, x1, y1, z0, z1;};
 };
 
-struct Sphere2{
-    union{
+struct Sphere2 {
+    union {
         Point2 p;
-        struct {
-            float32 x, y;
-        };
+        struct {float32 x, y;};
     };
     float32 r;
 };
 
-struct Sphere3{
-    union{
+struct Sphere3 {
+    union {
         Point3 p;
-        struct {
-            float32 x, y, z;
-        };
+        struct {float32 x, y, z;};
     };
     float32 r;
 };
@@ -148,13 +140,9 @@ typedef Vector3 Position3;
 typedef Vector3 Velocity3;
 typedef Vector3 Accelaration3;
 
-union Vector4{
-    struct {
-        float32 x, y, z, w;
-    };
-    struct {
-        float32 r, g, b, a;
-    };
+union Vector4 {
+    struct {float32 x, y, z, w;};
+    struct {float32 r, g, b, a;};
     float32 e[4];
 };
 
@@ -165,10 +153,7 @@ union Vector4{
 struct Image {
     union {
         Dimensions2i dimensions;
-        struct {
-            int32 width;
-            int32 height;
-        };
+        struct { int32 width, height;};
     };
     int32 channels;
     byte* data;
@@ -176,40 +161,3 @@ struct Image {
 
 typedef Vector3 RGB;
 typedef Vector4 RGBA;
-
-
-// TODO: move everything below this line
-//////////////////////////////////////////////////////
-
-struct HitBox {
-    union {
-        Position2 pos;
-        struct { pixels x, y; };
-    };
-    pixels radius, height;
-};
-
-#define LDN  1
-#define LUP  2
-#define RDN  3
-#define RUP  4
-
-// NOTE: I'm not actually currently using pos at all
-struct MouseEvent {
-    int32 type;
-    union{
-        Position2 pos;
-        struct{pixels x, y;};
-    };
-};
-
-struct MouseEventQueue{
-    union{
-        void* data;
-        MouseEvent* table;
-    };
-    int32 size;
-    int32 capacity;
-    int32 front;
-    int32 rear;
-};

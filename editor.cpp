@@ -1,35 +1,14 @@
-struct UIBox {
-    union{
-        HitBox hitBox;
-        struct {
-            union {
-                Position2 pos;
-                struct { pixels x, y; };
-            };
-            pixels radius, height;            
-        };
-    };
-
-    int32 tileId;
-    TextureHandle solid;
-
-    int32 parent;
-
-    uint32 flags; // 1-movable, 2-resizable, 4-clickable
-    void (*onClick)(int32);
-};
-
 #define TileCount 	22
 #define BoxCount 	TileCount+5  // 27
 #define I 			TileCount+1  // 23
 #define MM 			I+3			 // 26
 
-static UIBox boxes[BoxCount+1] = {};
+static UIElement elements[BoxCount+1] = {};
 static int32 renderOrder[BoxCount] = {};
 static int32 boxIndex = 0;
 static int32 selectedIndex = 0;
 
-static HitBox originalPos;
+static Box2 originalPos;
 static Position2 grabPos;
 // TODO: these should be flags
 static bool isGrabbing = false;
@@ -49,11 +28,11 @@ void Win32SetCursorToArrow();
 void Win32SetCursorToResize();
 void Win32SetCursorToHand();
 
-void Select(int32 boxId){
+void Select(int32 boxId) {
 	selectedIndex = boxId;
 }
 
-void Save(int32 boxId){
+void Save(int32 boxId) {
 	SaveStream("level.dat", grid, sizeof(grid));
 }
 
@@ -67,123 +46,76 @@ void EditorInit() {
 	grey2 = GenerateTextureFromRGBA(0x88bbbbbb);
 
 	for(int32 i=1; i<=TileCount; i++){
-		UIBox* box = &boxes[i];
-		box->pos.x = (i % 2) ? 34.0f : -34.0f;
-		box->pos.y = (((i-1)/2) * 68.0f) + 24.0f;
-		box->radius = 32.0f;
-		box->height = 64.0f;
-		box->parent = I;
-		box->tileId = i > 16 ? 0 : i;
-		box->solid = placeholder;
-		box->flags = 4;
-		box->onClick = &Select;
+		UIElement* element = &elements[i];
+		element->x0 = (i % 2) ? 102.0f : 34.0f;
+		element->y0 = (((i-1)/2) * 68.0f) + 24.0f;
+		element->x1 = (i % 2) ? 166.0f : 98.0f;
+		element->y1 = element->y0 + 64.0f;
+		element->parent = I;
+		element->tileId = i > 16 ? 0 : i;
+		element->solid = placeholder;
+		element->flags = 4;
+		element->onClick = &Select;
 		renderOrder[i-1]=i;
 	}
 
-	boxes[I].pos.x = 150.0f;
-	boxes[I].pos.y = 50.0f;
-	boxes[I].radius = 100.0f;
-	boxes[I].height = 800.0f;
-	boxes[I].parent = 0;
-	boxes[I].flags = 1;
-	boxes[I].solid = neutral;
+	elements[I].x0 = 50.0f;
+	elements[I].y0 = 50.0f;
+	elements[I].x1 = 250.0f;
+	elements[I].y1 = 850.0f;
+	elements[I].parent = 0;
+	elements[I].flags = 1;
+	elements[I].solid = neutral;
 	renderOrder[I-1]=I;
 
-	boxes[I+1].pos.x = 150.0f;  // 24
-	boxes[I+1].pos.y = 950.0f;
-	boxes[I+1].radius = 70.0f;
-	boxes[I+1].height = 80.0f;
-	boxes[I+1].parent = 0;
-	boxes[I+1].flags = 1;
-	boxes[I+1].solid = neutral;
+	elements[I+1].x0 = 80.0f;
+	elements[I+1].y0 = 950.0f;
+	elements[I+1].x1 = 220.0f;
+	elements[I+1].y1 = 1030.0f;
+	elements[I+1].parent = 0;
+	elements[I+1].flags = 1;
+	elements[I+1].solid = neutral;
 	renderOrder[I+1]=I+1;
 
-	boxes[I+2].pos.x = 0.0f;  // 25
-	boxes[I+2].pos.y = 10.0f;
-	boxes[I+2].radius = 60.0f;
-	boxes[I+2].height = 60.0f;
-	boxes[I+2].parent = I+1;
-	boxes[I+2].flags = 4;
-	boxes[I+2].solid = placeholder;
-	boxes[I+2].onClick = &Save;
+	elements[I+2].x0 = 10.0f;
+	elements[I+2].y0 = 10.0f;
+	elements[I+2].x1 = 130.0f;
+	elements[I+2].y1 = 70.0f;
+	elements[I+2].parent = I+1;
+	elements[I+2].flags = 4;
+	elements[I+2].solid = placeholder;
+	elements[I+2].onClick = &Save;
 	renderOrder[I]=I+2;
 
-	boxes[I+3].pos.x = 1700.0f;  // 26
-	boxes[I+3].pos.y = 850.0f;
-	boxes[I+3].radius = W_ * 2.0f;
-	boxes[I+3].height = H_ * 4.0f;
-	boxes[I+3].parent = 0;
-	boxes[I+3].flags = 1;
-	boxes[I+3].solid = grey1;
+	elements[I+3].x0 = 1700.0f - (W_ * 2.0f);
+	elements[I+3].y0 = 850.0f;
+	elements[I+3].x1 = 1700.0f + (W_ * 2.0f);
+	elements[I+3].y1 = 850.0f + (H_ * 4.0f);
+	elements[I+3].parent = 0;
+	elements[I+3].flags = 1;
+	elements[I+3].solid = grey1;
 	renderOrder[I+3]=I+3;
 
-	// NOTE: 27 minimap
-	boxes[I+4].pos.x = -(W_-X_) * 2.0f;
-	boxes[I+4].pos.y = 0.0f;
-	boxes[I+4].radius = X_ * 2.0f;
-	boxes[I+4].height = Y_ * 4.0f;
-	boxes[I+4].parent = I+3;
-	boxes[I+4].flags = 1;
-	boxes[I+4].solid = grey2;
+	elements[I+4].x0 = 0.0f;
+	elements[I+4].y0 = 0.0f;
+	elements[I+4].x1 = X_ * 4.0f;
+	elements[I+4].y1 = Y_ * 4.0f;
+	elements[I+4].parent = I+3;
+	elements[I+4].flags = 1;
+	elements[I+4].solid = grey2;
 	renderOrder[I+2]=I+4;
 }
 
-inline bool IsInsideHitBox(HitBox hitBox, Position2 pos){
-	return (hitBox.x-hitBox.radius <= pos.x && pos.x <= hitBox.x+hitBox.radius) &&
-		(hitBox.y <= pos.y && pos.y <= hitBox.y+hitBox.height);
-}
-
-inline HitBox GetAbsolutePosition(UIBox box){
-	if (box.parent == 0)
-		return box.hitBox;
-
-	Position2 parentPos = GetAbsolutePosition(boxes[box.parent]).pos;
-	HitBox hitBox = box.hitBox;
-	hitBox.pos = Position2{parentPos.x + box.x, parentPos.y + box.y};
-	return hitBox;
-}
-
-inline Position2 GetRelativePosition(Position2 pos, UIBox box){
-	Position2 base = GetAbsolutePosition(boxes[box.parent]).pos;
-	return Position2{pos.x - base.x, pos.y - base.y};
-}
-
-inline bool IsInsideBox(UIBox box, Position2 pos){
-	return IsInsideHitBox(GetAbsolutePosition(box), pos);
-}
-
-inline bool IsInBottomRight(HitBox hitBox, Position2 pos){
-	return hitBox.x+hitBox.radius-4 <= pos.x && pos.y <= hitBox.y+4;
-}
-
-inline bool IsInBottomRight(UIBox box, Position2 pos){
-	HitBox hitBox = GetAbsolutePosition(box);
-	return IsInBottomRight(hitBox, pos);
-}
-
-inline int32 GetBoxIndexByPos(Position2 cursorPos){
-	for(int32 i = 0; i < BoxCount; i++){
-		if (IsInsideBox(boxes[renderOrder[i]], cursorPos)) {
+inline int32 GetBoxIndexByPos(Position2 pos) {
+	for(int32 i = 0; i < BoxCount; i++) {
+		if (IsInsideBox(elements[renderOrder[i]], pos, elements)) {
 			return renderOrder[i];
 		}	
 	}
 	return 0;
 }
 
-void SetPosition(UIBox* box, Position2 newPos){
-	if (!box->parent){ box->pos = newPos; return; } 
-	UIBox parent = boxes[box->parent];
-
-	if (newPos.x < -parent.radius+box->radius) box->x = -parent.radius+box->radius;
-	else if (-box->radius+parent.radius < newPos.x) box->x = -box->radius+parent.radius;
-	else box->x = newPos.x;
-
-	if (newPos.y < 0.0f) box->y = 0;
-	else if (parent.height-box->height < newPos.y) box->y = parent.height-box->height;
-	else box->y = newPos.y;
-}
-
-void MoveToFront(int32 boxId){
+void MoveToFront(int32 boxId) {
 	int32 orderIndex = 0;
 	for(int32 i=0; i<BoxCount; i++) 
 		if (renderOrder[i] == boxId){orderIndex=i; break;}
@@ -193,30 +125,30 @@ void MoveToFront(int32 boxId){
 	renderOrder[0] = boxId;
 
 	for (int32 i=1; i<=BoxCount; i++)
-		if (boxes[i].parent == boxId) MoveToFront(i);
+		if (elements[i].parent == boxId) MoveToFront(i);
 }
 
 void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2 cursorPos) {
 	ClearScreen();
 
-	cameraPos.x = (boxes[I+4].pos.x + ((W_-X_) * 2.0f)) * 0.25f;// * 64.0f;
-	cameraPos.y = boxes[I+4].pos.y * 0.25f;// * 64.0f;
+	cameraPos.x = elements[I+4].x0 * 0.25f;
+	cameraPos.y = elements[I+4].y0 * 0.25f;
 	
 	bool isBottomRight = false;
 	if (!isResizing && !isGrabbing)
-		boxIndex = GetBoxIndexByPos(cursorPos);
-	UIBox* box = &(boxes[boxIndex]);
+	boxIndex = GetBoxIndexByPos(cursorPos);
+	UIElement* element = &(elements[boxIndex]);
 	if (boxIndex == 0) {
 		Win32SetCursorToArrow();
 	}
 	else{
-		if(IsInBottomRight(*box, cursorPos) && (box->flags & 2)){
+		if(IsInBottomRight(*element, cursorPos, elements) && (element->flags & 2)){
 			Win32SetCursorToResize();
 			isBottomRight = true;
 		}
 		else{
-			if (box->flags & 4) Win32SetCursorToHand();
-			else if (box->flags & 1) Win32SetCursorToMove();		
+			if (element->flags & 4) Win32SetCursorToHand();
+			else if (element->flags & 1) Win32SetCursorToMove();		
 		}
 	}
 
@@ -228,20 +160,20 @@ void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2 cursorPos
 		Assert(mouseEvent.type < 5)
 		if (mouseEvent.type == LDN && boxIndex != 0){
 			MoveToFront(boxIndex);
-			if (box->flags & 4){
+			if (element->flags & 4){
 				isPressed = true;
-				if (box->onClick)
-					box->onClick(boxIndex);
+				if (element->onClick)
+					element->onClick(boxIndex);
 			}
 			else{
-				if (isBottomRight && (box->flags & 2)) isResizing = true;
+				if (isBottomRight && (element->flags & 2)) isResizing = true;
 				else isGrabbing = true;
 				grabPos = cursorPos;
-				originalPos = box->hitBox;
+				originalPos = element->box;
 			}
 		}
 		else if (mouseEvent.type == LDN && boxIndex == 0 && selectedIndex != 0){
-			grid[tileX][tileY] = boxes[selectedIndex].tileId;
+			grid[tileX][tileY] = elements[selectedIndex].tileId;
 		}
 		else if (mouseEvent.type == RDN && boxIndex == 0 && selectedIndex != 0){
 			grid[tileX][tileY] = 0;
@@ -255,26 +187,25 @@ void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2 cursorPos
 
 	if (isGrabbing && 
 			(cursorPos.x != grabPos.x || cursorPos.y != grabPos.y)){
-		Position2 newPos;
-		newPos.x = originalPos.x + cursorPos.x - grabPos.x;
-		newPos.y = originalPos.y + cursorPos.y - grabPos.y;
-		SetPosition(box, newPos);
+		pixels newx0  = originalPos.x0 + cursorPos.x - grabPos.x;
+		pixels newy0 = originalPos.y0 + cursorPos.y - grabPos.y;
+		SetPosition(element, newx0, newy0, elements);
 	}
 
-	if (isResizing){
-		Position2 relativeCursorPos = GetRelativePosition(cursorPos, *box);
-		box->y = relativeCursorPos.y;
+	/*if (isResizing){
+		Position2 relativeCursorPos = GetRelativePosition(cursorPos, *element);
+		element->y = relativeCursorPos.y;
 		pixels left = originalPos.x-originalPos.radius;
-		box->x = (relativeCursorPos.x + left)*0.5f;
+		element->x = (relativeCursorPos.x + left)*0.5f;
 		pixels top = originalPos.y + originalPos.height;
-		box->height = top - relativeCursorPos.y;
-		box->radius = fabsf((relativeCursorPos.x - left)*0.5f);
+		element->height = top - relativeCursorPos.y;
+		element->radius = fabsf((relativeCursorPos.x - left)*0.5f);
 
-		if (box->height < 0){
-			box->y = originalPos.y+originalPos.height;
-			box->height = -box->height;
+		if (element->height < 0){
+			element->y = originalPos.y+originalPos.height;
+			element->height = -element->height;
 		}
-	}
+	}*/
 
 	for (int32 x = (int32)cameraPos.x; x < (int32)cameraPos.x+X_; x++) 
 	for (int32 y = (int32)cameraPos.y; y < (int32)cameraPos.y+Y_; y++) {
@@ -299,13 +230,13 @@ void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2 cursorPos
 			? _mm_set1_epi32(0xff000000) 
 			: _mm_set1_epi32(0x88999999);
 	}
-	boxes[MM].tileId = 0;
-	boxes[MM].solid = GenerateTextureFromImage(minimap, Pixelated);
+	elements[MM].tileId = 0;
+	elements[MM].solid = GenerateTextureFromImage(minimap, Pixelated);
 
 	for(int32 i=BoxCount-1; i>=0; i--){
 		int32 itBoxId = renderOrder[i];
-		UIBox itBox = boxes[itBoxId];
-		Position2 pos = GetAbsolutePosition(itBox).pos;
+		UIElement itBox = elements[itBoxId];
+		Box2 pos = GetAbsolutePosition(itBox, elements);
 		int32 tileId = itBox.tileId;
 		Tile tile;
 		if (itBox.tileId){
@@ -316,22 +247,16 @@ void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2 cursorPos
 			tile.solid = itBox.solid; 
 		}
 		if (itBoxId == boxIndex && isPressed){
-			Render(
+			RenderBox2(
 				black, BOX2_UNIT(),
-				pos,
-				2*itBox.radius, itBox.height,
-				0);
-			Render(
+				pos);
+			RenderBox2(
 				tile.texture, tile.crop,
-				{pos.x+2, pos.y-2},
-				2*itBox.radius, itBox.height,
-				0);
+				Box_Move(pos, {2, -2}));
 		}
-		else Render(
+		else RenderBox2(
 			tile.texture, tile.crop,
-			pos,
-			2*itBox.radius, itBox.height,
-			0);
+			pos);
 	}
 
 	char buffer[256];
@@ -353,21 +278,21 @@ void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2 cursorPos
 	str += CopyString(", ", 2, str); str += int32ToDecimal(tileY, str); memcpy(str, ")", 2);
 	DebugPrintText(16, 32.0 * 26, buffer);
 
-	if (boxIndex != 0){
+	/*if (boxIndex != 0){
 		str = buffer;
 		str += CopyString("box", 3, str);
 		str += int32ToDecimal(boxIndex, str);
 		str += CopyString(": {x=", 5, str);
-		str += float32ToDecimal(box->x, 1, str);
+		str += float32ToDecimal(element->x, 1, str);
 		str += CopyString(" y=", 3, str);
-		str += float32ToDecimal(box->y, 1, str);
+		str += float32ToDecimal(element->y, 1, str);
 		str += CopyString(" radius=", 8, str);
-		str += float32ToDecimal(box->radius, 0, str);
+		str += float32ToDecimal(element->radius, 0, str);
 		str += CopyString(" height=", 8, str);
-		str += float32ToDecimal(box->height, 0, str);
+		str += float32ToDecimal(element->height, 0, str);
 		str += CopyString(" flags=", 7, str);
-		str += uint32ToDecimal(box->flags, str);
+		str += uint32ToDecimal(element->flags, str);
 		memcpy(str, "}", 2);
 		DebugPrintText(16, 32.0 * 25, buffer);
-	}
+	}*/
 }

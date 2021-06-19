@@ -43,6 +43,7 @@ static Dimensions2i windowDim;
 #define GenerateTextureFromFile(file, filter)	\
 											GenerateTextureFromImage(LoadBMP((byte*)LoadStream(file)), filter)
 #define Render 								OpenGLRender
+#define RenderBox2							OpenGLRenderBox2
 #define ClearScreen 						OpenGLClearScreen
 #define Smooth								GL_LINEAR
 #define Pixelated							GL_NEAREST
@@ -51,9 +52,10 @@ static Dimensions2i windowDim;
 static BakedFont debugFont;
 #define DebugPrintText(x, y, text)			PrintText(debugFont, x, y, text)
 
+#include "gui.cpp"
 #include "sprites.cpp"
 
-#define Game 0
+#define Game 1
 #if Game
 #include "game.cpp"
 #define Init 								GameInit
@@ -173,11 +175,6 @@ HWND Win32CreateWindowFullScreen(HINSTANCE hInstance, WNDPROC windowCallBack, Di
 #define LEFT  0x02
 #define DOWN  0x04
 #define RIGHT 0x08
-
-#define LDN  1
-#define LUP  2
-#define RDN  3
-#define RUP  4
 
 Position2 Win32GetCursorPosition(HWND window){
 	POINT cursorPos;

@@ -3,6 +3,14 @@
 #define STATE_JUMP 2
 #define STATE_FALL 3
 
+struct HitBox {
+    union {
+        Position2 pos;
+        struct { pixels x, y; };
+    };
+    pixels radius, height;
+};
+
 struct Entity {
     union{
         HitBox hitBox;
