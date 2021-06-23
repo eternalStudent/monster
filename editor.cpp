@@ -252,7 +252,7 @@ void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2 cursorPos
 				pos);
 			RenderBox2(
 				tile.texture, tile.crop,
-				Box_Move(pos, {2, -2}));
+				Box_MoveBy(pos, {2, -2}));
 		}
 		else RenderBox2(
 			tile.texture, tile.crop,

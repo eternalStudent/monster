@@ -96,8 +96,30 @@ inline Box2 BOX2(float32 x0, float32 y0, float32 x1, float32 y1) {
     return result;
 }
 
-inline Box2 Box_Move(Box2 box, Point2 p) {
+inline Box2 Box_MoveBy(Box2 box, Point2 p) {
     return BOX2(box.x0+p.x, box.y0+p.y, box.x1+p.x, box.y1+p.y);
+}
+
+union Box2i {
+    struct {Point2i p0, p1;};
+    struct {int32 x0, y0, x1, y1;};
+};
+
+inline Box2i BOX2I(int32 x0, int32 y0, int32 x1, int32 y1) {
+    Box2i result;
+    result.x0 = x0;
+    result.y0 = y0;
+    result.x1 = x1;
+    result.y1 = y1;
+    return result;
+}
+
+inline Box2i Box2_MoveTo(Box2i box, Point2i p) {
+    return BOX2I(p.x, p.y, box.x1-box.x0+p.x, box.y1-box.y0+p.y);
+}
+
+inline Box2 fBox2i(Box2i box) {
+    return BOX2((float32)box.x0, (float32)box.y0, (float32)box.x1, (float32)box.y1);
 }
 
 union Box3 {
