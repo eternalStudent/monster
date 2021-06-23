@@ -22,18 +22,17 @@ BakedFont BakeFont(const char* filePath){
 	int32 ph = 512;
 	int32 first_char = 32;
 	int32 num_chars = 96;
-	float32 scale;
-   int32 x,y,bottom_y, i;
-   FontInfo f;
+	FontInfo f;
    if (!GetFontInfo(&f, data, 0))
     	return {};
    memset(mono_bitmap, 0, pw*ph); // background of 0 around pixels
-   x = y = 1;
-   bottom_y = 1;
+   int32 x = 1;
+   int32 y = 1;
+   int32 bottom_y = 1;
 
-   scale = ScaleForPixelHeight(&f, pixel_height);
+   float32 scale = ScaleForPixelHeight(&f, pixel_height);
 
-   for (i=0; i < num_chars; ++i) {
+   for (int32 i=0; i < num_chars; ++i) {
    	int32 advance, lsb, x0, y0, x1, y1, gw, gh;
       int32 g = FindGlyphIndex(&f, first_char + i);
       GetGlyphHMetrics(&f, g, &advance, &lsb);
@@ -59,20 +58,24 @@ BakedFont BakeFont(const char* filePath){
          bottom_y = y + gh + 1;
    }
 
-	byte* bitmap = ExpandChannels(mono_bitmap, 512 * 512);
+	byte* bitmap = ExpandChannels(mono_bitmap, pw*ph);
 
-	font.texture = GenerateTextureFromImage(Image{512, 512, 4, bitmap}, Smooth);
+	font.texture = GenerateTextureFromImage(Image{pw, ph, 4, bitmap}, Smooth);
 
 	return font;
 }
 
 // NOTE: adopted from stbtt_GetBakedQuad
 void PrintText(BakedFont font, float32 x, float32 y, char* text){
-	Box2 crop;
+	int32 pw = 512;
+	int32 ph = 512;
+	int32 first_char = 32;
+	int32 last_char = 128;
+
 	while (*text) {
-		if (*text >= 32 && *text < 128) {
-			float32 ipw = 1.0f / 512, iph = 1.0f / 512; // NOTE: division takes longer than multipication, this runs division at compile time.
-			const BakedChar* bakedchar = font.chardata + (*text - 32);
+		if (*text >= first_char && *text < last_char) {
+			float32 ipw = 1.0f / pw, iph = 1.0f / ph; // NOTE: division takes longer than multipication, this runs division at compile time.
+			const BakedChar* bakedchar = font.chardata + (*text - first_char);
 
 			int32 round_y = (int32)floorf(y + bakedchar->yoff + 0.5f); // NOTE: floor rounds towards -infinty, and casting rounds toward zero.
 			int32 y1 = round_y + bakedchar->y1 - bakedchar->y0;
@@ -80,18 +83,17 @@ void PrintText(BakedFont font, float32 x, float32 y, char* text){
 
 			int32 round_x = (int32)floorf(x + bakedchar->xoff + 0.5f);
 
-			crop.x0 = bakedchar->x0 * ipw;
-			crop.y0 = bakedchar->y0 * iph;
-			crop.x1 = bakedchar->x1 * ipw;
-			crop.y1 = bakedchar->y1 * iph;
+			Box2 pos = fBox2i(Box2_MoveTo(bakedchar->box, {round_x, printy}));
 
-			Box2 box = fBox2i(Box2_MoveTo(bakedchar->box, {round_x, printy}));
+			Box2 crop = BOX2(
+				bakedchar->x0 * ipw,
+				bakedchar->y0 * iph,
+				bakedchar->x1 * ipw,
+				bakedchar->y1 * iph);
+
+			RenderBox2(font.texture, crop, pos);
 
 			x += bakedchar->xadvance;
-
-			RenderBox2(
-				font.texture, crop,
-				box);
 		}
 		++text;
 	}
