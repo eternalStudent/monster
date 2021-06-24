@@ -91,7 +91,7 @@ void PrintText(BakedFont font, float32 x, float32 y, char* text){
 				bakedchar->x1 * ipw,
 				bakedchar->y1 * iph);
 
-			RenderBox2(font.texture, crop, pos);
+			RenderBox2(font.texture, crop, pos, 1);
 
 			x += bakedchar->xadvance;
 		}

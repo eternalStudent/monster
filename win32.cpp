@@ -55,7 +55,7 @@ static BakedFont debugFont;
 #include "gui.cpp"
 #include "sprites.cpp"
 
-#define Game 0
+#define Game 1
 #if Game
 #include "game.cpp"
 #define Init 								GameInit

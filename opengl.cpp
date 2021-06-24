@@ -115,8 +115,8 @@ void OpenGLRender(GLuint texture, Box2 crop, Position2 pos, pixels pwidth, pixel
 	float32 bottom = (2.0f * pos.y * iwheight) - 1;
 	float32 center = (2.0f * pos.x * iwwidth) - 1;
 
-	float32 bottomTex = crop.y1;
-	float32 topTex = crop.y0;
+	float32 bottomTex = crop.y0;
+	float32 topTex = crop.y1;
 	float32 rightTex = flip == 0 ? crop.x1 : crop.x0;
 	float32 leftTex = flip == 0 ? crop.x0 : crop.x1;
 
@@ -134,7 +134,7 @@ void OpenGLRender(GLuint texture, Box2 crop, Position2 pos, pixels pwidth, pixel
 	OpenGLRender_Internal(texture, vertices, sizeof(vertices));
 }
 
-void OpenGLRenderBox2(GLuint texture, Box2 crop, Box2 pos){
+void OpenGLRenderBox2(GLuint texture, Box2 crop, Box2 pos, int32 flip_vertically = 0){
 	float32 iwwidth = 1.0f / windowDim.width;
 	float32 iwheight = 1.0f / windowDim.height;
 
@@ -143,8 +143,8 @@ void OpenGLRenderBox2(GLuint texture, Box2 crop, Box2 pos){
 	float32 x1 = (2.0f * pos.x1 * iwwidth) - 1;
 	float32 y1 = (2.0f * pos.y1 * iwheight) - 1;
 
-	float32 bottomTex = crop.y1;
-	float32 topTex = crop.y0;
+	float32 bottomTex = flip_vertically? crop.y1 : crop.y0;
+	float32 topTex = flip_vertically? crop.y0 : crop.y1;
 	float32 rightTex = crop.x1;
 	float32 leftTex = crop.x0;
 

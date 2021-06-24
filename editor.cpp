@@ -226,7 +226,7 @@ void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2 cursorPos
 	minimap.channels = 4;
 	minimap.data = (byte*)Alloc((W_*4)*(H_*4)*4);
 	for (int32 x=0; x<W_; x++) for (int32 i=0; i<4; i++) for (int32 y=0; y<H_; y++){
-		((__m128i*)minimap.data)[y*4*W_ + i*W_ + x] = grid[x][H_-y-1] 
+		((__m128i*)minimap.data)[y*4*W_ + i*W_ + x] = grid[x][y] 
 			? _mm_set1_epi32(0xff000000) 
 			: _mm_set1_epi32(0x88999999);
 	}

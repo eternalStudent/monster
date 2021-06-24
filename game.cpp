@@ -1,7 +1,7 @@
-#define STATE_IDLE 0
-#define STATE_RUN  1
-#define STATE_JUMP 2
-#define STATE_FALL 3
+#define STATE_IDLE 3
+#define STATE_RUN  2
+#define STATE_JUMP 1
+#define STATE_FALL 0
 
 struct HitBox {
     union {
@@ -63,7 +63,7 @@ void GameInit() {
 #define RIGHT 0x08
 
 void UpdatePlayerByInput(int32 keysPressed, milliseconds deltaTime) {
-	pixels_per_millisec_2 accelaration = 0.0005f;
+	pixels_per_millisec_2 accelaration = 0.0003f;
 	pixels_per_millisec_2 jumpForce = 0.06f;
 	pixels_per_millisec maxSpeed = 0.8f;
 
@@ -156,13 +156,13 @@ void Collision(milliseconds deltaTime) {
 		pixels pointBottom = (bottom + 1) * 64.0f;
 
 		milliseconds timeToTop = player.velocity.y != 0 && player.y <= pointTop ?
-			(pointTop - player.y) / player.velocity.y : (float32)HUGE_VAL;
+			(pointTop - player.y) / player.velocity.y : INF32();
 		milliseconds timeToBottom = player.velocity.y != 0 && player.y >= pointBottom ?
-			(pointBottom - player.y) / player.velocity.y : (float32)HUGE_VAL;
+			(pointBottom - player.y) / player.velocity.y : INF32();
 		milliseconds timeToLeft = player.velocity.x != 0 && player.x >= pointLeft ?
-			(pointLeft - player.x) / player.velocity.x : (float32)HUGE_VAL;
+			(pointLeft - player.x) / player.velocity.x : INF32();
 		milliseconds timeToRight = player.velocity.x != 0 && player.x <= pointRight ?
-			(pointRight - player.x) / player.velocity.x : (float32)HUGE_VAL;
+			(pointRight - player.x) / player.velocity.x : INF32();
 
 		if (!hitsTop && !hitsBottom && !hitsLeft && !hitsRight) {
 			player.x = projectedX;

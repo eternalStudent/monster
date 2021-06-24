@@ -201,7 +201,7 @@ buf cid_get_glyph_subrs(const FontInfo* info, int32 glyph_index) {
    return get_subrs(info->cff, cff_index_get(info->fontdicts, fdselector));
 }
 
-#define __CHAR(p)     (* (char*) (p))
+#define __CHAR(p)    (* (char*) (p))
 #define __BYTE(p)    (* (byte*) (p))
 
 int16 __SHORT(byte* p) {
@@ -1154,15 +1154,15 @@ void MakeGlyphBitmapSubpixel(const FontInfo* info, byte* output,
    int32 ix0,iy0;
    vertex *vertices;
    int32 num_verts = GetGlyphShape(info, glyph, &vertices);
-   bitmap gbm;
+   Image gbm;
 
    GetGlyphBitmapBoxSubpixel(info, glyph, scale_x, scale_y, shift_x, shift_y, &ix0,&iy0,0,0);
-   gbm.pixels = output;
-   gbm.w = out_w;
-   gbm.h = out_h;
-   gbm.stride = out_stride;
+   gbm.data = output;
+   gbm.width = out_w;
+   gbm.height = out_h;
+   gbm.channels = out_stride;
 
-   if (gbm.w && gbm.h)
+   if (gbm.width && gbm.height)
       Rasterize(&gbm, 0.35f, vertices, num_verts, scale_x, scale_y, shift_x, shift_y, ix0,iy0, 1);
 
    Free(vertices);

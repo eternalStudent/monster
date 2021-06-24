@@ -197,7 +197,7 @@ Image LoadBMP(byte* data){
         return {};
 
     // TODO: probably accept that as an argument
-    flip_vertically = (image.height) > 0;
+    flip_vertically = (image.height) < 0;
     image.height = abs(image.height);
 
     if (image.height > MAX_DIMENSIONS) return {};

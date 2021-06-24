@@ -1,23 +1,14 @@
-struct hheap_chunk
-{
+struct hheap_chunk {
    hheap_chunk *next;
 };
 
-struct hheap
-{
+struct hheap {
    hheap_chunk *head;
-   void   *first_free;
-   int32    num_remaining_in_head_chunk;
+   void* first_free;
+   int32 num_remaining_in_head_chunk;
 };
 
-struct  bitmap
-{
-   int32 w,h,stride;
-   unsigned char *pixels;
-};
-
-void *hheap_alloc(hheap *hh, ssize size)
-{
+void *hheap_alloc(hheap *hh, ssize size) {
    if (hh->first_free) {
       void *p = hh->first_free;
       hh->first_free = * (void **) p;
@@ -37,14 +28,12 @@ void *hheap_alloc(hheap *hh, ssize size)
    }
 }
 
-void hheap_free(hheap *hh, void *p)
-{
+void hheap_free(hheap *hh, void *p) {
    *(void **) p = hh->first_free;
    hh->first_free = p;
 }
 
-void hheap_cleanup(hheap *hh)
-{
+void hheap_cleanup(hheap *hh) {
    hheap_chunk *c = hh->head;
    while (c) {
       hheap_chunk *n = c->next;
@@ -54,22 +43,20 @@ void hheap_cleanup(hheap *hh)
 }
 
 struct edge {
-   float32 x0,y0, x1,y1;
+   float32 x0, y0, x1, y1;
    int32 invert;
 };
 
 
-struct active_edge
-{
+struct active_edge {
    struct active_edge *next;
-   float32 fx,fdx,fdy;
+   float32 fx, fdx, fdy;
    float32 direction;
    float32 sy;
    float32 ey;
 };
 
-active_edge *new_active(hheap *hh, edge *e, int32 off_x, float32 start_point)
-{
+active_edge *new_active(hheap *hh, edge *e, int32 off_x, float32 start_point) {
    active_edge *z = (active_edge *) hheap_alloc(hh, sizeof(*z));
    float32 dxdy = (e->x1 - e->x0) / (e->y1 - e->y0);
    Assert(z != NULL);
@@ -85,8 +72,8 @@ active_edge *new_active(hheap *hh, edge *e, int32 off_x, float32 start_point)
    return z;
 }
 
-void handle_clipped_edge(float32 *scanline, int32 x, active_edge *e, float32 x0, float32 y0, float32 x1, float32 y1)
-{
+void handle_clipped_edge(float32 *scanline, int32 x, active_edge *e, 
+                         float32 x0, float32 y0, float32 x1, float32 y1) {
    if (y0 == y1) return;
    Assert(y0 < y1);
    Assert(e->sy <= e->ey);
@@ -122,8 +109,8 @@ void handle_clipped_edge(float32 *scanline, int32 x, active_edge *e, float32 x0,
    }
 }
 
-void fill_active_edges_new(float32 *scanline, float32 *scanline_fill, int32 len, active_edge *e, float32 y_top)
-{
+void fill_active_edges_new(float32 *scanline, float32 *scanline_fill, 
+                           int32 len, active_edge *e, float32 y_top) {
    float32 y_bottom = y_top+1;
 
    while (e) {
@@ -284,7 +271,8 @@ void fill_active_edges_new(float32 *scanline, float32 *scanline_fill, int32 len,
 }
 
 // directly AA rasterize edges w/o supersampling
-void rasterize_sorted_edges(bitmap *result, edge *e, int32 n, int32 vsubsample, int32 off_x, int32 off_y)
+void rasterize_sorted_edges(Image* result, edge *e, int32 n, int32 vsubsample, 
+                            int32 off_x, int32 off_y)
 {
    hheap hh = { 0, 0, 0 };
    active_edge *active = NULL;
@@ -293,24 +281,24 @@ void rasterize_sorted_edges(bitmap *result, edge *e, int32 n, int32 vsubsample, 
 
    (void)(vsubsample);
 
-   if (result->w > 64)
-      scanline = (float32 *) Alloc((result->w*2+1) * sizeof(float32));
+   if (result->width > 64)
+      scanline = (float32 *) Alloc((result->width*2+1) * sizeof(float32));
    else
       scanline = scanline_data;
 
-   scanline2 = scanline + result->w;
+   scanline2 = scanline + result->width;
 
    y = off_y;
-   e[n].y0 = (float32) (off_y + result->h) + 1;
+   e[n].y0 = (float32) (off_y + result->height) + 1;
 
-   while (j < result->h) {
+   while (j < result->height) {
       // find center of pixel for this scanline
       float32 scan_y_top    = y + 0.0f;
       float32 scan_y_bottom = y + 1.0f;
       active_edge **step = &active;
 
-      memset(scanline , 0, result->w*sizeof(scanline[0]));
-      memset(scanline2, 0, (result->w+1)*sizeof(scanline[0]));
+      memset(scanline , 0, result->width*sizeof(scanline[0]));
+      memset(scanline2, 0, (result->width+1)*sizeof(scanline[0]));
 
       // update all active edges;
       // remove all active edges that terminate before the top of this scanline
@@ -348,19 +336,19 @@ void rasterize_sorted_edges(bitmap *result, edge *e, int32 n, int32 vsubsample, 
 
       // now process all active edges
       if (active)
-         fill_active_edges_new(scanline, scanline2+1, result->w, active, scan_y_top);
+         fill_active_edges_new(scanline, scanline2+1, result->width, active, scan_y_top);
 
       {
          float32 sum = 0;
-         for (i=0; i < result->w; ++i) {
+         for (i=0; i < result->width; ++i) {
             float32 k;
             int32 m;
             sum += scanline2[i];
             k = scanline[i] + sum;
             k = (float32) fabs(k)*255 + 0.5f;
-            m = (int) k;
+            m = (int32) k;
             if (m > 255) m = 255;
-            result->pixels[j*result->stride + i] = (unsigned char) m;
+            result->data[j*result->channels + i] = (byte) m;
          }
       }
       // advance all the edges
@@ -469,8 +457,10 @@ void sort_edges(edge *p, int32 n)
    sort_edges_ins_sort(p, n);
 }
 
-void rasterize(bitmap *result, Point2 *pts, int32 *wcount, int32 windings, float32 scale_x, float32 scale_y, float32 shift_x, float32 shift_y, int32 off_x, int32 off_y, int32 invert)
-{
+void rasterize(Image* result, Point2 *pts, int32 *wcount, 
+               int32 windings, float32 scale_x, float32 scale_y, 
+               float32 shift_x, float32 shift_y, 
+               int32 off_x, int32 off_y, int32 invert) {
    float32 y_scale_inv = invert ? -scale_y : scale_y;
    edge *e;
    int32 n,i,j,k,m;
@@ -667,7 +657,7 @@ error:
    return NULL;
 }
 
-void Rasterize(bitmap *result, float32 flatness_in_pixels, vertex *vertices, int32 num_verts, float32 scale_x, float32 scale_y, float32 shift_x, float32 shift_y, int32 x_off, int32 y_off, int32 invert)
+void Rasterize(Image* result, float32 flatness_in_pixels, vertex *vertices, int32 num_verts, float32 scale_x, float32 scale_y, float32 shift_x, float32 shift_y, int32 x_off, int32 y_off, int32 invert)
 {
    float32 scale            = scale_x > scale_y ? scale_y : scale_x;
    int32 winding_count      = 0;
