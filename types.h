@@ -53,6 +53,10 @@ union Point2 {
 };
 typedef Point2 Dimensions2;
 
+inline Point2 Scale(Point2 p, float32 factor) {
+    return {p.x*factor, p.y*factor};
+}
+
 union Point3 {
     struct {float32 x, y, z;};
     struct {float32 r, g, b;};

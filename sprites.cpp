@@ -1,10 +1,5 @@
-/*
-	TODO:
-	- grid should be world grid
-*/
-
 struct Sprite{
-	union{
+	union {
 		TextureHandle spritesheet;
 		TextureHandle tileset;
 		TextureHandle solid;
@@ -25,9 +20,9 @@ static Sprite sprites[1024] = {};
 #define H_ 34
 static int32 grid[W_][H_] = {};
 
-void SpritesInit(){
+void SpritesInit() {
 	TextureHandle tileset = GenerateTextureFromFile("grass_tileset.bmp", Pixelated);
-	for (int i=0; i<16; i++){
+	for (int32 i=0; i<16; i++){
 		int32 x = i / 4;
 		int32 y = i % 4;
 		Sprite* tile = &sprites[i+1];

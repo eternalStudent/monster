@@ -66,7 +66,6 @@ static BakedFont debugFont;
 
 /*
  *   TODO:
- *   - camera movement
  *   - tile properties
  */
 

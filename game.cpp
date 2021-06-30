@@ -6,21 +6,16 @@
 struct HitBox {
     union {
         Position2 pos;
-        struct { pixels x, y; };
+        struct {pixels x, y;};
     };
     pixels radius, height;
 };
 
 struct Entity {
-    union{
+    union {
         HitBox hitBox;
-        struct {
-            union {
-                Position2 pos;
-                struct { pixels x, y; };
-            };
-            pixels radius, height;          
-        };
+        struct {Position2 pos; pixels radius, height;};
+        struct {pixels x, y;   pixels radius, height;};
     };
 
     // renderable
@@ -51,7 +46,7 @@ void GameInit() {
 	}
 
 	player = {};
-	player.pos = { 32.0f, 64.0f*4 };
+	player.pos = {32.0f, 64.0f*4};
 	player.hitBox.height = 58.0f;
 	player.hitBox.radius = 10.0f;
 	player.texture = GenerateTextureFromFile("adventurer.bmp", Pixelated);
@@ -139,29 +134,29 @@ void Collision(milliseconds deltaTime) {
 		if (projectedY < 0)
 			projectedY = 0;
 
-		int32 left = (int32)((projectedX - player.hitBox.radius + 32.0f) / 64.0f);
-		int32 right = (int32)((projectedX + player.hitBox.radius + 32.0f) / 64.0f);
-		int32 top = (int32)((projectedY + player.hitBox.height) / 64.0f);
-		int32 bottom = (int32)((projectedY) / 64.0f);
+		int32 left   = (int32)((projectedX - player.hitBox.radius + 32.0f)/64.0f);
+		int32 right  = (int32)((projectedX + player.hitBox.radius + 32.0f)/64.0f);
+		int32 top    = (int32)((projectedY + player.hitBox.height)/64.0f);
+		int32 bottom = (int32)((projectedY)/64.0f);
 
 		bool hitsTop = false, hitsBottom = false, hitsLeft = false, hitsRight = false;
-		if (0 <= left && left < 31) for (int32 y = bottom; y <= top; y++) if (grid[left][y] != 0) { hitsLeft = true; break; }
-		if (0 <= right && right < 31) for (int32 y = bottom; y <= top; y++) if (grid[right][y] != 0) { hitsRight = true; break; }
-		if (0 <= top && top < 17) for (int32 x = left; x <= right; x++) if (grid[x][top] != 0) { hitsTop = true; break; }
-		if (0 <= bottom && bottom < 17) for (int32 x = left; x <= right; x++) if (grid[x][bottom] != 0) { hitsBottom = true; break; }
+		if (0 <= left   && left   < W_) for (int32 y = bottom; y <= top; y++) if (grid[left][y]   != 0) { hitsLeft = true;   break; }
+		if (0 <= right  && right  < W_) for (int32 y = bottom; y <= top; y++) if (grid[right][y]  != 0) { hitsRight = true;  break; }
+		if (0 <= top    && top    < H_) for (int32 x = left; x <= right; x++) if (grid[x][top]    != 0) { hitsTop = true;    break; }
+		if (0 <= bottom && bottom < H_) for (int32 x = left; x <= right; x++) if (grid[x][bottom] != 0) { hitsBottom = true; break; }
 
-		pixels pointLeft = (left + 0.5f) * 64.0f + player.hitBox.radius;
-		pixels pointRight = (right - 0.5f) * 64.0f - player.hitBox.radius;
-		pixels pointTop = (top - 0) * 64.0f - player.hitBox.height;
-		pixels pointBottom = (bottom + 1) * 64.0f;
+		pixels pointLeft   = (left   + 0.5f)*64.0f + player.hitBox.radius;
+		pixels pointRight  = (right  - 0.5f)*64.0f - player.hitBox.radius;
+		pixels pointTop    = (top    - 0.0f)*64.0f - player.hitBox.height;
+		pixels pointBottom = (bottom + 1.0f)*64.0f;
 
-		milliseconds timeToTop = player.velocity.y != 0 && player.y <= pointTop ?
+		milliseconds timeToTop = (player.velocity.y != 0 && player.y <= pointTop)?
 			(pointTop - player.y) / player.velocity.y : INF32();
-		milliseconds timeToBottom = player.velocity.y != 0 && player.y >= pointBottom ?
+		milliseconds timeToBottom = (player.velocity.y != 0 && player.y >= pointBottom)?
 			(pointBottom - player.y) / player.velocity.y : INF32();
-		milliseconds timeToLeft = player.velocity.x != 0 && player.x >= pointLeft ?
+		milliseconds timeToLeft = (player.velocity.x != 0 && player.x >= pointLeft)?
 			(pointLeft - player.x) / player.velocity.x : INF32();
-		milliseconds timeToRight = player.velocity.x != 0 && player.x <= pointRight ?
+		milliseconds timeToRight = (player.velocity.x != 0 && player.x <= pointRight)?
 			(pointRight - player.x) / player.velocity.x : INF32();
 
 		if (!hitsTop && !hitsBottom && !hitsLeft && !hitsRight) {
@@ -255,13 +250,18 @@ void GameUpdateAndRender(uint32 keysPressed, milliseconds deltaTime) {
 	Collision(deltaTime);
 
 	if (player.y <= 0) {
-		player.pos = { 32.0f, 64.0f*4 };
+		player.pos = {32.0f, 64.0f*4};
 		player.velocity = {};
 		player.stateRow = STATE_IDLE;
 	}
 	UpdatePlayerStatus(previousState, deltaTime);
 
-	for (int x = 0; x < 31; x++) for (int y = 0; y < 17; y++) {
+	pixels half_width = windowDim.width / 2.0f;
+	pixels half_height = windowDim.height / 2.0f;
+	pixels camerax = player.x > half_width ? player.x - half_width : 0;
+	pixels cameray = player.y > half_height ? player.y - half_height : 0;
+	// TODO: this is iterating over more than necessary tiles
+	for (int x = 0; x < W_; x++) for (int y = 0; y < H_; y++) {
 		int32 tileId = grid[x][y];
 		if (tileId == 0)
 			continue;
@@ -269,19 +269,19 @@ void GameUpdateAndRender(uint32 keysPressed, milliseconds deltaTime) {
 		Tile tile = sprites[tileId];
 		Render(
 			tile.tileset, tile.crop,
-			Position2{ x * 64.0f, y * 64.0f },
+			{x*64.0f-camerax, y*64.0f-cameray},
 			64.0f, 64.0f,
 			0);
 	}
 
 	Box2 crop;
-	crop.x0 = player.stateColumn * 0.25f;
-	crop.y0 = player.stateRow * 0.25f;
-	crop.x1 = (player.stateColumn+1) * 0.25f;
-	crop.y1 = (player.stateRow+1) * 0.25f;
+	crop.x0 = player.stateColumn*0.25f;
+	crop.y0 = player.stateRow*0.25f;
+	crop.x1 = (player.stateColumn + 1)*0.25f;
+	crop.y1 = (player.stateRow + 1)*0.25f;
 	Render(
 		player.texture, crop,
-		player.pos,
+		{player.x-camerax, player.y-cameray},
 		100.0f, 74.0f,
 		player.direction);
 
@@ -290,22 +290,22 @@ void GameUpdateAndRender(uint32 keysPressed, milliseconds deltaTime) {
 	char buffer[256];
 	char* str = buffer; 
 	str += CopyString("player.x: ", 10, str); float32ToDecimal(player.x, 2, str);
-	DebugPrintText(16, 32.0 * 27, buffer);
+	DebugPrintText(16, 32.0*27, buffer);
 	str = buffer;
 	str += CopyString("player.y: ", 10, str); float32ToDecimal(player.y, 2, str);
-	DebugPrintText(16, 32.0 * 26, buffer);
+	DebugPrintText(16, 32.0*26, buffer);
 	str = buffer;
 	str += CopyString("velocity.x: ", 12, str); float32ToDecimal(player.velocity.x, 2, str);
-	DebugPrintText(16, 32.0 * 25, buffer);
+	DebugPrintText(16, 32.0*25, buffer);
 	str = buffer;
 	str += CopyString("velocity.y: ", 12, str); float32ToDecimal(player.velocity.y, 2, str);
-	DebugPrintText(16, 32.0 * 24, buffer);
+	DebugPrintText(16, 32.0*24, buffer);
 	str = buffer;
 	str += CopyString("delta-time: ", 12, str); str += float32ToDecimal(deltaTime, 2, str); memcpy(str, "ms", 3);
-	DebugPrintText(16, 32.0 * 23, buffer);
+	DebugPrintText(16, 32.0*23, buffer);
 
 	str = buffer;
 	str += CopyString("state: (", 8, str); str += uint32ToDecimal(player.stateRow, str);
 	str += CopyString(", ", 2, str); str += uint32ToDecimal(player.stateColumn, str); memcpy(str, ")", 2);
-	DebugPrintText(16, 32.0 * 22, buffer);
+	DebugPrintText(16, 32.0*22, buffer);
 }
