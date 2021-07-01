@@ -42,6 +42,9 @@ inline float32 M_INF32() {
     return data.f;
 }
 
+#define MIN(x,y) (x)<(y)?(x):(y)
+#define MAX(x,y) (x)<(y)?(y):(x)
+
 
 /*      GEOMETRY        */
 //----------------------//

@@ -48,14 +48,16 @@ static Dimensions2i windowDim;
 #define Smooth								GL_LINEAR
 #define Pixelated							GL_NEAREST
 
+static TextureHandle blackTexture;
+
 #include "font.cpp"
 static BakedFont debugFont;
 #define DebugPrintText(x, y, text)			PrintText(debugFont, x, y, text)
 
-#include "gui.cpp"
 #include "sprites.cpp"
+#include "gui.cpp"
 
-#define Game 1
+#define Game 0
 #if Game
 #include "game.cpp"
 #define Init 								GameInit
@@ -66,6 +68,8 @@ static BakedFont debugFont;
 
 /*
  *   TODO:
+ *   - UI playground
+ *   - Debug sliders
  *   - tile properties
  */
 
@@ -167,6 +171,8 @@ HWND Win32CreateWindowFullScreen(HINSTANCE hInstance, WNDPROC windowCallBack, Di
 	return window;
 }
 
+// TODO: move input??
+
 // Input
 // ---------
 
@@ -266,28 +272,16 @@ void Win32ProcessPendingMessages(HWND window, uint32* keysPressed, MouseEventQue
 			}
 		} break;
 		case WM_LBUTTONDOWN: {
-			MouseEvent mouseEvent;
-			mouseEvent.pos = Win32GetCursorPosition(window);
-			mouseEvent.type = LDN;
-			Enqueue(mouseEventQueue, mouseEvent);
+			Enqueue(mouseEventQueue, LDN);
 		}break;
 		case WM_LBUTTONUP: {
-			MouseEvent mouseEvent;
-			mouseEvent.pos = Win32GetCursorPosition(window);
-			mouseEvent.type = LUP;
-			Enqueue(mouseEventQueue, mouseEvent);
+			Enqueue(mouseEventQueue, LUP);
 		}break;
 		case WM_RBUTTONDOWN: {
-			MouseEvent mouseEvent;
-			mouseEvent.pos = Win32GetCursorPosition(window);
-			mouseEvent.type = RDN;
-			Enqueue(mouseEventQueue, mouseEvent);
+			Enqueue(mouseEventQueue, RDN);
 		}break;
 		case WM_RBUTTONUP: {
-			MouseEvent mouseEvent;
-			mouseEvent.pos = Win32GetCursorPosition(window);
-			mouseEvent.type = RUP;
-			Enqueue(mouseEventQueue, mouseEvent);
+			Enqueue(mouseEventQueue, RUP);
 		}break;
 
 		default:

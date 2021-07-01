@@ -14,10 +14,13 @@ typedef Sprite Tile;
 
 static Sprite sprites[1024] = {};
 
-#define X_ 31
-#define Y_ 17
 #define W_ 62
 #define H_ 34
+
+// TODO: these should be computed!
+#define X_ 31
+#define Y_ 17
+
 static int32 grid[W_][H_] = {};
 
 void SpritesInit() {
@@ -29,4 +32,6 @@ void SpritesInit() {
 		tile->tileset = tileset;
 		tile->crop = {x*0.25f, y*0.25f, (x+1)*0.25f, (y+1)*0.25f};
 	}
+
+	blackTexture = GenerateTextureFromRGBA(0xff000000);
 }
