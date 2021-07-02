@@ -60,6 +60,10 @@ inline Point2 Scale(Point2 p, float32 factor) {
     return {p.x*factor, p.y*factor};
 }
 
+inline Point2 Move(Point2 p, float32 x, float32 y) {
+    return {p.x+x, p.y+y};
+}
+
 union Point3 {
     struct {float32 x, y, z;};
     struct {float32 r, g, b;};

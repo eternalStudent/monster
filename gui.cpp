@@ -1,5 +1,7 @@
 struct UIElement {
     int32 index;
+
+    // Why am I using floating points here anyway??
     union {
     	Box2 box;
     	struct {Position2 p0, p1;};
@@ -18,7 +20,7 @@ struct UIElement {
 
 struct GUI {
     UIElement* elements;
-    int32* renderOrder;
+    int32* renderOrder; // NOTE: the front is 0
     int32 elementCount;
     int32 elementIndex;
     Position2 originalPos;
@@ -143,10 +145,8 @@ UIElement* HandleCursorPosition(GUI* gui, Position2 cursorPos){
     if (!gui->isResizing && !gui->isGrabbing)
     gui->elementIndex = GetElementIndexByPos(cursorPos, *gui);
     UIElement* element = &(gui->elements[gui->elementIndex]);
-    if (gui->elementIndex == 0) {
-        Win32SetCursorToArrow();
-    }
-    else{
+    Win32SetCursorToArrow();
+    if (gui->elementIndex != 0) {
         if(IsInBottomRight(*element, cursorPos, gui->elements) && (element->flags & 2)){
             Win32SetCursorToResize();
             gui->isBottomRight = true;
@@ -193,7 +193,7 @@ int32 HandleMouseEvent(MouseEventQueue* mouseEventQueue, GUI* gui,
         }
         else{
             if (gui->isBottomRight && (element->flags & 2)) gui->isResizing = true;
-            else gui->isGrabbing = true;
+            else if (element->flags & 1) gui->isGrabbing = true;
             gui->grabPos = cursorPos;
             gui->originalPos = element->p0;
         }

@@ -8,7 +8,6 @@ static UIElement elements[ElementCount+1] = {};
 static int32 renderOrder[ElementCount] = {};
 
 static int32 selectedIndex = 0;
-static TextureHandle black;
 
 void Select(int32 boxId) {
 	selectedIndex = boxId;
@@ -22,8 +21,6 @@ void EditorInit() {
 	gui.elementCount = 1;
 	gui.elements = elements;
 	gui.renderOrder = renderOrder;
-
-	LoadStream("level.dat", grid, sizeof(grid));
 
 	TextureHandle neutral = GenerateTextureFromRGBA(0x88c1daff);
 	TextureHandle placeholder = GenerateTextureFromRGBA(0xff998888);
@@ -96,6 +93,8 @@ void EditorInit() {
 	sliderPos->flags = 1;
 	sliderPos->texture = black;
 	renderOrder[I+4]=I+6;
+
+	LoadStream("level.dat", grid, sizeof(grid));
 }
 
 void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2 cursorPos) {

@@ -58,12 +58,16 @@ static BakedFont debugFont;
 #include "gui.cpp"
 
 #define Game 0
+#define Editor 0
 #if Game
-#include "game.cpp"
-#define Init 								GameInit
+	#include "game.cpp"
+	#define Init 								GameInit
+#elif Editor
+	#include "editor.cpp"
+	#define Init 								EditorInit
 #else
-#include "editor.cpp"
-#define Init 								EditorInit
+	#include "gui_playground.cpp"
+	#define Init 								PlaygroundInit
 #endif
 
 /*
@@ -368,9 +372,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
 #if Game
 		GameUpdateAndRender(keysPressed, deltaTime);
-#else 
+#elif Editor 
 		Position2 cursorPos = Win32GetCursorPosition(window);
 		EditorUpdateAndRender(&mouseEventQueue, cursorPos);
+#else
+		Position2 cursorPos = Win32GetCursorPosition(window);
+		PlaygroundUpdateAndRender(&mouseEventQueue, cursorPos);
 #endif
 		
 		//Sleep(100.0/6.0 - deltaTime);
