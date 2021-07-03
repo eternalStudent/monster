@@ -1,4 +1,4 @@
-#define ElementCapacity 30
+#define ElementCapacity 50
 
 static GUI gui = {};
 static UIElement elements[ElementCapacity+1] = {};
@@ -23,40 +23,52 @@ void EditorInit() {
 
 	TextureHandle neutral = GenerateTextureFromRGBA(0x88c1daff);
 	TextureHandle placeholder = GenerateTextureFromRGBA(0xff998888);
-	TextureHandle grey1 = GenerateTextureFromRGBA(0x88999999);
+	TextureHandle grey1 = GenerateTextureFromRGBA(0xff999999);
 	TextureHandle grey2 = GenerateTextureFromRGBA(0x88bbbbbb);
-	TextureHandle grey3 = GenerateTextureFromRGBA(0x99aaaaaa);
+	TextureHandle grey3 = GenerateTextureFromRGBA(0xffaaaaaa);
 
 	UIElement* tabControl = GetNewElement(&gui);
-	tabControl->p0 = {50.0f, 50.0f};
+	tabControl->p0 = {1636.0f, 50.0f};
 	tabControl->p1 = Move(tabControl->p0, 200.0f, 800.0f);
 	tabControl->parent = 0;
 	tabControl->flags = 1;
 	tabControl->texture = neutral;
-	renderOrder[24] = tabControl->index;
+	renderOrder[40] = tabControl->index;
 
 	UIElement* tabHead2 = GetNewElement(&gui);
 	tabHead2->p0 = {100.0f, 752.0f};
 	tabHead2->p1 = Move(tabHead2->p0, 88.0f, 36.0f);
 	tabHead2->parent = tabControl->index;
 	tabHead2->flags = 0;
-	tabHead2->texture = grey1;
-	renderOrder[23] = tabHead2->index;
+	tabHead2->texture = grey3;
+	renderOrder[39] = tabHead2->index;
 
 	UIElement* tab2 = GetNewElement(&gui);
 	tab2->p0 = {-88.0f, -740.0f};
 	tab2->p1 = Move(tab2->p0, 176.0f, 740.0f);
 	tab2->parent = tabHead2->index;
 	tab2->flags = 0;
-	tab2->texture = grey1;
-	renderOrder[22] = tab2->index;
+	tab2->texture = grey3;
+	renderOrder[38] = tab2->index;
+
+	for(int32 i = 1; i<=16; i++){
+		UIElement* element = GetNewElement(&gui);
+		element->x0 = (i % 2) ? 90.0f : 22.0f;
+		element->y0 = (((i-1)/2) * 68.0f) + 24.0f;
+		element->p1 = Move(element->p0, 64.0f, 64.0f);
+		element->parent = tab2->index;
+		element->tileId = i+16;
+		element->flags = 4;
+		element->onClick = &Select;
+		renderOrder[21+i]=element->index;
+	}
 
 	UIElement* tabHead1 = GetNewElement(&gui);
 	tabHead1->p0 = {12.0f, 752.0f};
 	tabHead1->p1 = Move(tabHead1->p0, 88.0f, 36.0f);
 	tabHead1->parent = tabControl->index;
 	tabHead1->flags = 0;
-	tabHead1->texture = grey3;
+	tabHead1->texture = grey1;
 	renderOrder[21] = tabHead1->index;
 
 	UIElement* tab1 = GetNewElement(&gui);
@@ -64,7 +76,7 @@ void EditorInit() {
 	tab1->p1 = Move(tab1->p0, 176.0f, 740.0f);
 	tab1->parent = tabHead1->index;
 	tab1->flags = 0;
-	tab1->texture = grey3;
+	tab1->texture = grey1;
 	renderOrder[20] = tab1->index;
 
 	for(int32 i = 1; i<=16; i++){
@@ -95,7 +107,7 @@ void EditorInit() {
 	renderOrder[2] = button->index;
 
 	UIElement* minimap = GetNewElement(&gui);
-	minimap->p0 = {1600.0f, 850.0f};
+	minimap->p0 = {1600.0f, 887.0f};
 	minimap->p1 = Move(minimap->p0, (W_ * 4.0f), (H_ * 4.0f));
 	minimap->parent = 0;
 	minimap->flags = 1;

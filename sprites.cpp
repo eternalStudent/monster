@@ -33,5 +33,14 @@ void SpritesInit() {
 		tile->crop = {x*0.25f, y*0.25f, (x+1)*0.25f, (y+1)*0.25f};
 	}
 
+	tileset = GenerateTextureFromFile("stuff_tileset.bmp", Pixelated);
+	for (int32 i=0; i<16; i++){
+		int32 x = i / 4;
+		int32 y = i % 4;
+		Sprite* tile = &sprites[i+17];
+		tile->tileset = tileset;
+		tile->crop = {x*0.25f, y*0.25f, (x+1)*0.25f, (y+1)*0.25f};
+	}
+
 	blackTexture = GenerateTextureFromRGBA(0xff000000);
 }

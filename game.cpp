@@ -417,7 +417,7 @@ void GameUpdateAndRender(uint32 keysPressed, milliseconds deltaTime, MouseEventQ
 	DebugPrintText(ui_text_box->x+12.0f, ui_text_box->y+12+2*36.0f, buffer);
 
 	str = buffer;
-	float32 jumpForce = LoadExp(-13)*(*ui_jumpForce);
+	float32 jumpForce = LoadExp(-5) + LoadExp(-13)*(*ui_jumpForce);
 	str += CopyString("jump force: ", 12, str); float32ToDecimal(jumpForce, 8, str);
 	DebugPrintText(ui_text_box->x+12.0f, ui_text_box->y+12+36.0f, buffer);
 
