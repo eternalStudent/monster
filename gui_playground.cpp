@@ -5,7 +5,6 @@ static UIElement elements[ElementCount+1] = {};
 static int32 renderOrder[ElementCount] = {};
 
 void PlaygroundInit() {
-	gui.elementCount = 1;
 	gui.elements = elements;
 	gui.renderOrder = renderOrder;
 

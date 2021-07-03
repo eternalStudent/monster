@@ -58,7 +58,7 @@ static BakedFont debugFont;
 #include "gui.cpp"
 
 #define Game 1
-#define Editor 0
+#define Editor 1
 #if Game
 	#include "game.cpp"
 	#define Init 								GameInit
@@ -72,8 +72,6 @@ static BakedFont debugFont;
 
 /*
  *   TODO:
- *   - UI playground
- *   - Debug sliders
  *   - tile properties
  */
 

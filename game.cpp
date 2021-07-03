@@ -40,10 +40,10 @@ static GUI gui = {};
 static UIElement elements[ElementCount+1] = {};
 static int32 renderOrder[ElementCount] = {};
 
-float32* ui_accelaration;
-float32* ui_jumpForce;
-float32* ui_maxSpeed;
-float32* ui_gravity;
+static float32* ui_accelaration;
+static float32* ui_jumpForce;
+static float32* ui_maxSpeed;
+static float32* ui_gravity;
 
 void GameInit() {
 	bool load = LoadStream("level.dat", grid, sizeof(grid));
@@ -63,8 +63,6 @@ void GameInit() {
 	player.hitBox.radius = 10.0f;
 	player.texture = GenerateTextureFromFile("adventurer.bmp", Pixelated);
 
-
-	gui.elementCount = 1;
 	gui.elements = elements;
 	gui.renderOrder = renderOrder;	
 
@@ -391,11 +389,6 @@ void GameUpdateAndRender(uint32 keysPressed, milliseconds deltaTime, MouseEventQ
 	str = buffer;
 	str += CopyString("delta-time: ", 12, str); str += float32ToDecimal(deltaTime, 2, str); memcpy(str, "ms", 3);
 	DebugPrintText(16, 32.0*23, buffer);
-
-	str = buffer;
-	str += CopyString("state: (", 8, str); str += uint32ToDecimal(player.stateRow, str);
-	str += CopyString(", ", 2, str); str += uint32ToDecimal(player.stateColumn, str); memcpy(str, ")", 2);
-	DebugPrintText(16, 32.0*22, buffer);
 
 
 

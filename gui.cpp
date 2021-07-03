@@ -33,7 +33,7 @@ struct GUI {
 };
 
 inline UIElement* GetNewElement(GUI* gui) {
-    int32 index = gui->elementCount;
+    int32 index = gui->elementCount+1;
     UIElement* element = &(gui->elements[index]);
     element->index = index;
     gui->elementCount++;

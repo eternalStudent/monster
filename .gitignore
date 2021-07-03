@@ -2,3 +2,7 @@
 *.exe
 *.pdb
 *.obj
+build/.vs/monster/v16/Browse.VC.db
+build/.vs/monster/v16/Browse.VC.db-shm
+build/.vs/monster/v16/Browse.VC.db-wal
+build/.vs/monster/v16/Browse.VC.opendb
