@@ -23,6 +23,7 @@ struct Entity {
 
     // can move
     Velocity2 velocity;
+    bool onGround;
 
     // changing sprite/animation
     milliseconds timeSpentInState;
@@ -34,16 +35,17 @@ struct Entity {
 static Entity player;
 
 // GUI stuff
-#define ElementCount 8
+#define ElementCapacity 9
 
 static GUI gui = {};
-static UIElement elements[ElementCount+1] = {};
-static int32 renderOrder[ElementCount] = {};
+static UIElement elements[ElementCapacity+1] = {};
+static int32 renderOrder[ElementCapacity] = {};
 
 static float32* ui_accelaration;
 static float32* ui_jumpForce;
 static float32* ui_maxSpeed;
 static float32* ui_gravity;
+static Position2* ui_text_box;
 
 void GameInit() {
 	bool load = LoadStream("level.dat", grid, sizeof(grid));
@@ -64,12 +66,21 @@ void GameInit() {
 	player.texture = GenerateTextureFromFile("adventurer.bmp", Pixelated);
 
 	gui.elements = elements;
-	gui.renderOrder = renderOrder;	
+	gui.renderOrder = renderOrder;
+
+	UIElement* container = GetNewElement(&gui);
+	container->p0 = {8.0f, 900.0f};
+	container->p1 = Move(container->p0, 290.0f, 162.0f);
+	container->parent = 0;
+	container->flags = 1;
+	container->texture = GenerateTextureFromRGBA(0x22ffffff);
+	renderOrder[8] = container->index;
+	ui_text_box = &container->p0;
 
 	UIElement* slider1 = GetNewElement(&gui);
-	slider1->p0 = {16.0f, 1044.0f};
+	slider1->p0 = {6.0f, 30.0f+3*36.0f};
 	slider1->p1 = Move(slider1->p0, 264.0f, 8.0f);
-	slider1->parent = 0;
+	slider1->parent = container->index;
 	slider1->flags = 0;
 	slider1->texture = GenerateTextureFromRGBA(0x88c1daff);
 	renderOrder[7]=slider1->index;
@@ -84,9 +95,9 @@ void GameInit() {
 	ui_accelaration = &(sliderPos1->x0);
 
 	UIElement* slider2 = GetNewElement(&gui);
-	slider2->p0 = {16.0f, 1008.0f};
+	slider2->p0 = {6.0f, 30.0f+2*36.0f};
 	slider2->p1 = Move(slider2->p0, 264.0f, 8.0f);
-	slider2->parent = 0;
+	slider2->parent = container->index;
 	slider2->flags = 0;
 	slider2->texture = GenerateTextureFromRGBA(0x88c1daff);
 	renderOrder[5]=slider2->index;
@@ -101,9 +112,9 @@ void GameInit() {
 	ui_maxSpeed = &(sliderPos2->x0);
 
 	UIElement* slider3 = GetNewElement(&gui);
-	slider3->p0 = {16.0f, 972.0f};
+	slider3->p0 = {6.0f, 30.0f+36.0f};
 	slider3->p1 = Move(slider3->p0, 264.0f, 8.0f);
-	slider3->parent = 0;
+	slider3->parent = container->index;
 	slider3->flags = 0;
 	slider3->texture = GenerateTextureFromRGBA(0x88c1daff);
 	renderOrder[3]=slider3->index;
@@ -118,9 +129,9 @@ void GameInit() {
 	ui_jumpForce = &sliderPos3->x0;
 
 	UIElement* slider4 = GetNewElement(&gui);
-	slider4->p0 = {16.0f, 936.0f};
+	slider4->p0 = {6.0f, 30.0f};
 	slider4->p1 = Move(slider4->p0, 264.0f, 8.0f);
-	slider4->parent = 0;
+	slider4->parent = container->index;
 	slider4->flags = 0;
 	slider4->texture = GenerateTextureFromRGBA(0x88c1daff);
 	renderOrder[1]=slider4->index;
@@ -141,9 +152,9 @@ void GameInit() {
 #define RIGHT 0x08
 
 void UpdatePlayerByInput(int32 keysPressed, milliseconds deltaTime) {
-	pixels_per_millisec_2 accelaration = (float32)(ldexp(1, -12) + ldexp(1, -20)*(*ui_accelaration));
-	pixels_per_millisec_2 jumpForce = (float32)(ldexp(1, -5) + ldexp(1, -13)*(*ui_jumpForce));
-	pixels_per_millisec maxSpeed = 0.5f + (float32)(ldexp(1, -9)*(*ui_maxSpeed));
+	pixels_per_millisec_2 accelaration = LoadExp(-12) + LoadExp(-20)*(*ui_accelaration);
+	pixels_per_millisec_2 jumpForce = LoadExp(-5) + LoadExp(-13)*(*ui_jumpForce);
+	pixels_per_millisec maxSpeed = 0.5f + LoadExp(-9)*(*ui_maxSpeed);
 
 	if (keysPressed & JUMP && player.stateRow != STATE_JUMP && player.stateRow != STATE_FALL) {
 		player.velocity.y += deltaTime * jumpForce;
@@ -166,17 +177,17 @@ void UpdatePlayerByInput(int32 keysPressed, milliseconds deltaTime) {
 }
 
 static void UpdatePlayerByGravity(milliseconds deltaTime) {
-	pixels_per_millisec_2 gravity = (float32)(ldexp(1, -9) + ldexp(1, -17)*(*ui_gravity));
+	pixels_per_millisec_2 gravity = LoadExp(-9) + LoadExp(-17)*(*ui_gravity);
 
 	if (player.y > 0)
 		player.velocity.y -= deltaTime * gravity;
 }
 
 void UpdatePlayerStatus(byte previousState, milliseconds deltaTime) {
-	if (player.velocity.x == 0 && player.velocity.y == 0) {
+	if (player.velocity.x == 0 && player.velocity.y == 0 && player.onGround) {
 		player.stateRow = STATE_IDLE;
 	}
-	if (player.velocity.x != 0 && player.velocity.y == 0) {
+	if (player.velocity.x != 0 && player.velocity.y == 0 && player.onGround) {
 		player.stateRow = STATE_RUN;
 	}
 	if (player.velocity.y < 0) {
@@ -252,6 +263,7 @@ void Collision(milliseconds deltaTime) {
 				if (projectedY < pointBottom)
 					player.y = pointBottom;
 				player.velocity.y = 0;
+				player.onGround = true;
 				break;
 			}
 			else if (!atEpsilonSpeed && player.velocity.y <= 0) {
@@ -276,6 +288,7 @@ void Collision(milliseconds deltaTime) {
 						if (projectedY < pointBottom)
 							player.y = pointBottom;
 						player.velocity.y = 0;
+						player.onGround = true;
 						remainingTime -= timeToBottom;
 					}
 				}
@@ -329,6 +342,7 @@ void GameUpdateAndRender(uint32 keysPressed, milliseconds deltaTime, MouseEventQ
 	UpdateElements(&gui, cursorPos, mouseEventQueue);
 
 	byte previousState = player.stateRow;
+	player.onGround = false;
 	UpdatePlayerByInput(keysPressed, deltaTime);
 	UpdatePlayerByGravity(deltaTime);
 	Collision(deltaTime);
@@ -393,22 +407,22 @@ void GameUpdateAndRender(uint32 keysPressed, milliseconds deltaTime, MouseEventQ
 
 
 	str = buffer;
-	float32 accelaration = (float32)(ldexp(1, -12) + ldexp(1, -20)*(*ui_accelaration));
+	float32 accelaration = LoadExp(-12) + LoadExp(-20)*(*ui_accelaration);
 	str += CopyString("accelaration: ", 14, str); float32ToDecimal(accelaration, 8, str);
-	DebugPrintText(16, 36.0*28.5, buffer);
+	DebugPrintText(ui_text_box->x+12.0f, ui_text_box->y+12+3*36.0f, buffer);
 
 	str = buffer;
-	float32 max_speed = 0.5f + (float32)(ldexp(1, -9)*(*ui_maxSpeed));
+	float32 max_speed = 0.5f + LoadExp(-9)*(*ui_maxSpeed);
 	str += CopyString("max speed: ", 11, str); float32ToDecimal(max_speed, 8, str);
-	DebugPrintText(16, 36.0*27.5, buffer);
+	DebugPrintText(ui_text_box->x+12.0f, ui_text_box->y+12+2*36.0f, buffer);
 
 	str = buffer;
-	float32 jumpForce = (float32)(ldexp(1, -5) + ldexp(1, -13)*(*ui_jumpForce));
+	float32 jumpForce = LoadExp(-13)*(*ui_jumpForce);
 	str += CopyString("jump force: ", 12, str); float32ToDecimal(jumpForce, 8, str);
-	DebugPrintText(16, 36.0*26.5, buffer);
+	DebugPrintText(ui_text_box->x+12.0f, ui_text_box->y+12+36.0f, buffer);
 
 	str = buffer;
-	float32 gravity = (float32)(ldexp(1, -9) + ldexp(1, -17)*(*ui_gravity));
+	float32 gravity = LoadExp(-9) + LoadExp(-17)*(*ui_gravity);
 	str += CopyString("gravity: ", 9, str); float32ToDecimal(gravity, 8, str);
-	DebugPrintText(16, 36.0*25.5, buffer);
+	DebugPrintText(ui_text_box->x+12.0f, ui_text_box->y+12.0f, buffer);
 }

@@ -13,18 +13,19 @@ struct BakedFont {
 };
 
 // TODO: accept RGB as argument, accept pixel_height as argument
-BakedFont BakeFont(const char* filePath){
-	BakedFont font;
-	byte* data = (byte*)LoadStream(filePath);
-	byte* mono_bitmap = (byte*)Alloc(512*512);
+BakedFont BakeFont(const char* filePath) {
 	float32 pixel_height = 24.0f;
 	int32 pw = 512;
 	int32 ph = 512;
 	int32 first_char = 32;
 	int32 num_chars = 96;
+
+	byte* data = (byte*)LoadStream(filePath);
 	FontInfo f;
    if (!GetFontInfo(&f, data, 0))
     	return {};
+
+   byte* mono_bitmap = (byte*)Alloc(pw*ph);
    memset(mono_bitmap, 0, pw*ph); // background of 0 around pixels
    int32 x = 1;
    int32 y = 1;
@@ -32,6 +33,7 @@ BakedFont BakeFont(const char* filePath){
 
    float32 scale = ScaleForPixelHeight(&f, pixel_height);
 
+   BakedFont font;
    for (int32 i=0; i < num_chars; ++i) {
    	int32 advance, lsb, x0, y0, x1, y1, gw, gh;
       int32 g = FindGlyphIndex(&f, first_char + i);

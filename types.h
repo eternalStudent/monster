@@ -42,6 +42,13 @@ inline float32 M_INF32() {
     return data.f;
 }
 
+inline float32 LoadExp(int32 exp) {
+    uint32 exp_part = (uint32)(exp+127);
+    union {uint32 u; float32 f;} data;
+    data.u = exp_part << 23;
+    return data.f;
+}
+
 #define MIN(x,y) (x)<(y)?(x):(y)
 #define MAX(x,y) (x)<(y)?(y):(x)
 
