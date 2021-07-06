@@ -40,11 +40,15 @@ inline UIElement* GetNewElement(GUI* gui) {
     return element;
 }
 
+inline UIElement GetParent(GUI gui, UIElement element) {
+    return gui.elements[element.parent];
+}
+
 inline Box2 GetAbsolutePosition(GUI gui, UIElement element) {
     if (element.parent == 0)
         return element.box;
 
-    Box2 parentPos = GetAbsolutePosition(gui, gui.elements[element.parent]);
+    Box2 parentPos = GetAbsolutePosition(gui, GetParent(gui, element));
     Box2 absolute;
     absolute.x0 = parentPos.x0 + element.x0;
     absolute.y0 = parentPos.y0 + element.y0;
@@ -71,7 +75,7 @@ void SetPosition(GUI gui, UIElement* element, pixels x0, pixels y0) {
         p0 = {x0,y0};
     }
     else {
-        UIElement parent = gui.elements[element->parent];
+        UIElement parent = GetParent(gui, *element);
 
         if (x0 < 0) p0.x = 0;
         else if (x0+width > parent.x1-parent.x0) p0.x = parent.x1-parent.x0-width;
@@ -114,7 +118,8 @@ inline void MoveToFront(GUI gui, UIElement* element) {
     return MoveToFront(gui, element->index);
 }
 
-void UpdateElement(GUI gui, UIElement* element, Position2 cursorPos) {
+void UpdateActiveElement(GUI gui, Position2 cursorPos) {
+    UIElement* element = gui.active;
     // Handle grabbing
     if (gui.isGrabbing && 
             (cursorPos.x != gui.grabPos.x || cursorPos.y != gui.grabPos.y)){
@@ -214,7 +219,7 @@ int32 HandleMouseEvent(GUI* gui,
 int32 UpdateElements(GUI* gui, Position2 cursorPos, MouseEventQueue* mouseEventQueue){
     HandleCursorPosition(gui, cursorPos);
     int32 mouseEvent = HandleMouseEvent(gui, mouseEventQueue, cursorPos);
-    UpdateElement(*gui, element, cursorPos);
+    UpdateActiveElement(*gui, cursorPos);
     return mouseEvent;
 }
 
