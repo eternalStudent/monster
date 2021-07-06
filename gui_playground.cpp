@@ -23,11 +23,11 @@ void PlaygroundUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2 curso
 	str += CopyString(", ", 2, str); str += float32ToDecimal(cursorPos.y, 0, str); memcpy(str, ")", 2);
 	DebugPrintText(16, 32.0 * 28, buffer);
 
-	if (gui.elementIndex != 0){
-		UIElement* element = &elements[gui.elementIndex];
+	if (gui.active) {
+		UIElement* element = gui.active;
 		str = buffer;
 		str += CopyString("element", 7, str);
-		str += int32ToDecimal(gui.elementIndex, str);
+		str += int32ToDecimal(gui.active->index, str);
 		str += CopyString(": {x0=", 6, str);
 		str += float32ToDecimal(element->x0, 1, str);
 		str += CopyString(" y0=", 4, str);
