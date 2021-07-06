@@ -1,3 +1,6 @@
+// Sprites
+//----------------------- 
+
 struct Sprite {
 	union {
 		TextureHandle spritesheet;
@@ -8,13 +11,22 @@ struct Sprite {
 };
 
 typedef Sprite Brush;
-static Brush blackBrush;
 
-Brush GenerateBrush(uint32 rgba) {
+inline Brush GenerateBrush(uint32 rgba) {
 	Sprite brush;
 	brush.texture = GenerateTextureFromRGBA(rgba);
 	brush.crop = BOX2_UNIT();
 	return brush;
+}
+
+inline void RenderSprite(Sprite sprite, Box2 pos) {
+	RenderBox2(sprite.texture, sprite.crop, pos);
+}
+
+static Brush blackBrush;
+
+void TilesInit() {
+	blackBrush = GenerateBrush(0xff000000);
 }
 
 
@@ -27,7 +39,7 @@ struct Tile {
 		Sprite sprite;
 		struct {TextureHandle tileset; Box2 crop;};
 	};
-	uint32 flags; // 1 - blocking
+	uint32 flags; // 1 - blocking, 2 - disapper on touch
 };
 
 static Tile tiles[1024] = {};
@@ -60,7 +72,6 @@ void SpritesInit() {
 		Tile* tile = &tiles[i+17];
 		tile->tileset = tileset;
 		tile->crop = {x*0.25f, y*0.25f, (x+1)*0.25f, (y+1)*0.25f};
+		tile->flags = 2;
 	}
-
-	blackBrush = GenerateBrush(0xff000000);
 }

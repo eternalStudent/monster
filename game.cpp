@@ -235,20 +235,24 @@ void Collision(milliseconds deltaTime) {
 
 		bool hitsTop = false, hitsBottom = false, hitsLeft = false, hitsRight = false;
 		if (0 <= left   && left   < W_) for (int32 y = bottom; y <= top; y++) {
-			int32 tileId = grid[left][y];
-			if ((tiles[tileId].flags & 1) != 0) { hitsLeft = true;   break; }
+			uint32 flags = tiles[grid[left][y]].flags;
+			if (flags & 1) hitsLeft = true;
+			if (flags & 2) grid[left][y] = 0;
 		}
 		if (0 <= right  && right  < W_) for (int32 y = bottom; y <= top; y++) {
-			int32 tileId = grid[right][y];
-			if ((tiles[tileId].flags & 1) != 0) { hitsRight = true;  break; }
+			uint32 flags = tiles[grid[right][y]].flags;
+			if (flags & 1) hitsRight = true;
+			if (flags & 2) grid[right][y] = 0;
 		}
 		if (0 <= top    && top    < H_) for (int32 x = left; x <= right; x++) {
-			int32 tileId = grid[x][top];
-			if ((tiles[tileId].flags & 1) != 0) { hitsTop = true;    break; }
+			int32 flags = tiles[grid[x][top]].flags;
+			if (flags & 1) hitsTop = true;
+			if (flags & 2) grid[x][top] = 0;
 		}
 		if (0 <= bottom && bottom < H_) for (int32 x = left; x <= right; x++) {
-			int32 tileId = grid[x][bottom];
-			if ((tiles[tileId].flags & 1) != 0) { hitsBottom = true; break; }
+			uint32 flags = tiles[grid[x][bottom]].flags;
+			if (flags & 1) hitsBottom = true;
+			if (flags & 2) grid[x][bottom] = 0;
 		}
 
 		pixels pointLeft   = (left   + 0.5f)*64.0f + player.hitBox.radius;
