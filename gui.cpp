@@ -48,6 +48,7 @@ inline Box2 GetAbsolutePosition(GUI gui, UIElement element) {
     if (element.parent == 0)
         return element.box;
 
+
     Box2 parentPos = GetAbsolutePosition(gui, GetParent(gui, element));
     Box2 absolute;
     absolute.x0 = parentPos.x0 + element.x0;
