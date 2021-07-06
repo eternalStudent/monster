@@ -52,7 +52,7 @@ static Dimensions2i windowDim;
 static BakedFont debugFont;
 #define DebugPrintText(x, y, text)			PrintText(debugFont, x, y, text)
 
-#include "sprites.cpp"
+#include "tiles.cpp"
 #include "gui.cpp"
 
 #define Game 1
