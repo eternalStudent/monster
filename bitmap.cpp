@@ -1,23 +1,3 @@
-// returns 1 if the product is valid, 0 on overflow.
-// negative factors are considered invalid.
-int32 mul2sizes_valid(int32 a, int32 b){
-    if (a < 0 || b < 0) return 0;
-    if (b == 0) return 1; // mul-by-0 is always safe
-    // portable way to check for no overflows in a*b
-    return a <= INT32_MAX / b;
-}
-
-// returns 1 if "a*b*c + add" has no negative terms/factors and doesn't overflow
-int32 mad3sizes_valid(int32 a, int32 b, int32 c){
-    return mul2sizes_valid(a, b) && mul2sizes_valid(a * b, c) &&
-        a * b * c <= INT32_MAX;
-}
-
-void* malloc_mad3(int32 a, int32 b, int32 c){
-    if (!mad3sizes_valid(a, b, c)) return NULL;
-    return Alloc(a * b * c);
-}
-
 //------------------
 // Bit Operations 
 //------------------
@@ -67,19 +47,6 @@ int32 shiftsigned(uint32 v, int32 shift, int32 bits) {
     v >>= (8 - bits);
     Assert(bits >= 0 && bits <= 8);
     return (int32)(v * mul_table[bits]) >> shift_table[bits];
-}
-
-#define Skip(data, distance)    *(data)+=(distance)
-#define ReadByte(data)          *(*data)++
-
-int32 ReadUint16LittleEndian(byte** data) {
-    int32 z = ReadByte(data);
-    return z + (ReadByte(data) << 8);
-}
-
-uint32 ReadUint32LittleEndian(byte** data) {
-    uint32 z = ReadUint16LittleEndian(data);
-    return z + (ReadUint16LittleEndian(data) << 16);
 }
 
 // ------------
@@ -217,8 +184,7 @@ Image LoadBMP(byte* data){
     else
         image.channels = info.ma ? 4 : 3;
 
-    image.data = (byte*)malloc_mad3(image.channels, image.width, image.height);
-    if (!image.data) return {};
+    image.data = (byte*)Alloc(image.channels * image.width * image.height);
     if (info.bpp < 16) {
         int32 z = 0;
         if (psize == 0 || psize > 256) { Free(image.data); return {}; }

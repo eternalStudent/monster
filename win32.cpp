@@ -25,6 +25,7 @@ static Arena arena;
 #define Fail(text)							(Log(text), 0)
 
 // file-formats
+#include "binary_reader.cpp"
 #include "bitmap.cpp"
 #include "truetype.cpp"
 

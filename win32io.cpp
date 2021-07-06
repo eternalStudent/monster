@@ -1,3 +1,4 @@
+// NOTE: unused
 void Win32Skip(HANDLE hFile, LONG distance) {
     DWORD dwPtrLow = SetFilePointer(hFile, distance, NULL, FILE_CURRENT);
     if (dwPtrLow == INVALID_SET_FILE_POINTER || GetLastError() != NO_ERROR) {

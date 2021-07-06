@@ -45,6 +45,7 @@ uint32 buf_get(buf* b, int32 n) {
 #define buf_get16(b)  buf_get((b), 2)
 #define buf_get32(b)  buf_get((b), 4)
 
+// NOTE: sub-range
 buf buf_range(const buf* b, int32 o, int32 s) {
    buf r = new_buf(NULL, 0);
    if (o < 0 || s < 0 || o > b->size || s > b->size - o) return r;
