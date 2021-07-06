@@ -1,23 +1,42 @@
-struct Sprite{
+struct Sprite {
 	union {
 		TextureHandle spritesheet;
 		TextureHandle tileset;
-		TextureHandle solid;
 		TextureHandle texture;
 	};
 	Box2 crop;
 };
 
-// TODO: probably Tile would have to be distinct from Sprite
-// in the future
-typedef Sprite Tile;
+typedef Sprite Brush;
+static Brush blackBrush;
 
-static Sprite sprites[1024] = {};
+Brush GenerateBrush(uint32 rgba) {
+	Sprite brush;
+	brush.texture = GenerateTextureFromRGBA(rgba);
+	brush.crop = BOX2_UNIT();
+	return brush;
+}
+
+
+// Tiles  
+//-----------------------             
+
+struct Tile {
+	int32 index;
+	union {
+		Sprite sprite;
+		struct {TextureHandle tileset; Box2 crop;};
+	};
+	uint32 flags; // 1 - blocking
+};
+
+static Tile tiles[1024] = {};
 
 #define W_ 62
 #define H_ 34
 
-// TODO: these should be computed!
+// TODO: either these should be computed, or the tile-size
+// probably should be moved
 #define X_ 31
 #define Y_ 17
 
@@ -28,19 +47,20 @@ void SpritesInit() {
 	for (int32 i=0; i<16; i++){
 		int32 x = i / 4;
 		int32 y = i % 4;
-		Sprite* tile = &sprites[i+1];
+		Tile* tile = &tiles[i+1];
 		tile->tileset = tileset;
 		tile->crop = {x*0.25f, y*0.25f, (x+1)*0.25f, (y+1)*0.25f};
+		tile->flags = 1;
 	}
 
 	tileset = GenerateTextureFromFile("stuff_tileset.bmp", Pixelated);
 	for (int32 i=0; i<16; i++){
 		int32 x = i / 4;
 		int32 y = i % 4;
-		Sprite* tile = &sprites[i+17];
+		Tile* tile = &tiles[i+17];
 		tile->tileset = tileset;
 		tile->crop = {x*0.25f, y*0.25f, (x+1)*0.25f, (y+1)*0.25f};
 	}
 
-	blackTexture = GenerateTextureFromRGBA(0xff000000);
+	blackBrush = GenerateBrush(0xff000000);
 }

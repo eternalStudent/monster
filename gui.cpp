@@ -1,5 +1,6 @@
 struct UIElement {
     int32 index;
+    int32 parent;
 
     // Why am I using floating points here anyway??
     union {
@@ -8,14 +9,13 @@ struct UIElement {
     	struct {pixels x0, y0, x1, y1;};
     };
 
-    // NOTE: either a tile, or a texture
-    int32 tileId;
-    TextureHandle texture;
-
-    int32 parent;
+    union {
+        Sprite background;
+        struct {TextureHandle texture; Box2 crop;};
+    };
 
     uint32 flags; // 1-movable, 2-resizable, 4-clickable
-    void (*onClick)(int32);
+    void (*onClick)(UIElement*);
 };
 
 struct GUI {
@@ -189,7 +189,7 @@ int32 HandleMouseEvent(MouseEventQueue* mouseEventQueue, GUI* gui,
         if (element->flags & 4){
             gui->isPressed = true;
             if (element->onClick)
-                element->onClick(gui->elementIndex);
+                element->onClick(element);
         }
         else{
             if (gui->isBottomRight && (element->flags & 2)) gui->isResizing = true;
@@ -218,25 +218,17 @@ void RenderElements(GUI gui) {
         int32 index = gui.renderOrder[i];
         UIElement element = gui.elements[index];
         Box2 pos = GetAbsolutePosition(element, gui.elements);
-        int32 tileId = element.tileId;
-        Tile tile;
-        if (element.tileId){
-            tile = sprites[tileId];
-        }
-        else{
-            tile.crop = BOX2_UNIT();
-            tile.solid = element.texture; 
-        }
+        Sprite sprite = element.background;
         if (index == gui.elementIndex && gui.isPressed){
             RenderBox2(
-                blackTexture, BOX2_UNIT(),
+                blackBrush.texture, blackBrush.crop,
                 pos);
             RenderBox2(
-                tile.texture, tile.crop,
+                sprite.texture, sprite.crop,
                 Box_MoveBy(pos, {2, -2}));
         }
         else RenderBox2(
-            tile.texture, tile.crop,
+            sprite.texture, sprite.crop,
             pos);
     }
 }

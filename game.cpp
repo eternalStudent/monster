@@ -73,7 +73,7 @@ void GameInit() {
 	container->p1 = Move(container->p0, 290.0f, 162.0f);
 	container->parent = 0;
 	container->flags = 1;
-	container->texture = GenerateTextureFromRGBA(0x22ffffff);
+	container->background = GenerateBrush(0x22ffffff);
 	renderOrder[8] = container->index;
 	ui_text_box = &container->p0;
 
@@ -82,7 +82,7 @@ void GameInit() {
 	slider1->p1 = Move(slider1->p0, 264.0f, 8.0f);
 	slider1->parent = container->index;
 	slider1->flags = 0;
-	slider1->texture = GenerateTextureFromRGBA(0x88c1daff);
+	slider1->background = GenerateBrush(0x88c1daff);
 	renderOrder[7]=slider1->index;
 
 	UIElement* sliderPos1 = GetNewElement(&gui);
@@ -90,7 +90,7 @@ void GameInit() {
 	sliderPos1->p1 = Move(sliderPos1->p0, 8.0f, 8.0f);
 	sliderPos1->parent = slider1->index;
 	sliderPos1->flags = 1;
-	sliderPos1->texture = blackTexture;
+	sliderPos1->background = blackBrush;
 	renderOrder[6]=sliderPos1->index;
 	ui_accelaration = &(sliderPos1->x0);
 
@@ -99,7 +99,7 @@ void GameInit() {
 	slider2->p1 = Move(slider2->p0, 264.0f, 8.0f);
 	slider2->parent = container->index;
 	slider2->flags = 0;
-	slider2->texture = GenerateTextureFromRGBA(0x88c1daff);
+	slider2->background = GenerateBrush(0x88c1daff);
 	renderOrder[5]=slider2->index;
 
 	UIElement* sliderPos2 = GetNewElement(&gui);
@@ -107,7 +107,7 @@ void GameInit() {
 	sliderPos2->p1 = Move(sliderPos2->p0, 8.0f, 8.0f);
 	sliderPos2->parent = slider2->index;
 	sliderPos2->flags = 1;
-	sliderPos2->texture = blackTexture;
+	sliderPos2->background = blackBrush;
 	renderOrder[4]=sliderPos2->index;
 	ui_maxSpeed = &(sliderPos2->x0);
 
@@ -116,7 +116,7 @@ void GameInit() {
 	slider3->p1 = Move(slider3->p0, 264.0f, 8.0f);
 	slider3->parent = container->index;
 	slider3->flags = 0;
-	slider3->texture = GenerateTextureFromRGBA(0x88c1daff);
+	slider3->background = GenerateBrush(0x88c1daff);
 	renderOrder[3]=slider3->index;
 
 	UIElement* sliderPos3 = GetNewElement(&gui);
@@ -124,7 +124,7 @@ void GameInit() {
 	sliderPos3->p1 = Move(sliderPos3->p0, 8.0f, 8.0f);
 	sliderPos3->parent = slider3->index;
 	sliderPos3->flags = 1;
-	sliderPos3->texture = blackTexture;
+	sliderPos3->background = blackBrush;
 	renderOrder[2]=sliderPos3->index;
 	ui_jumpForce = &sliderPos3->x0;
 
@@ -133,7 +133,7 @@ void GameInit() {
 	slider4->p1 = Move(slider4->p0, 264.0f, 8.0f);
 	slider4->parent = container->index;
 	slider4->flags = 0;
-	slider4->texture = GenerateTextureFromRGBA(0x88c1daff);
+	slider4->background = GenerateBrush(0x88c1daff);
 	renderOrder[1]=slider4->index;
 
 	UIElement* sliderPos4 = GetNewElement(&gui);
@@ -141,7 +141,7 @@ void GameInit() {
 	sliderPos4->p1 = Move(sliderPos4->p0, 8.0f, 8.0f);
 	sliderPos4->parent = slider4->index;
 	sliderPos4->flags = 1;
-	sliderPos4->texture = blackTexture;
+	sliderPos4->background = blackBrush;
 	renderOrder[0]=sliderPos4->index;
 	ui_gravity = &sliderPos4->x0;
 }
@@ -234,10 +234,22 @@ void Collision(milliseconds deltaTime) {
 		int32 bottom = (int32)((projectedY)/64.0f);
 
 		bool hitsTop = false, hitsBottom = false, hitsLeft = false, hitsRight = false;
-		if (0 <= left   && left   < W_) for (int32 y = bottom; y <= top; y++) if (grid[left][y]   != 0) { hitsLeft = true;   break; }
-		if (0 <= right  && right  < W_) for (int32 y = bottom; y <= top; y++) if (grid[right][y]  != 0) { hitsRight = true;  break; }
-		if (0 <= top    && top    < H_) for (int32 x = left; x <= right; x++) if (grid[x][top]    != 0) { hitsTop = true;    break; }
-		if (0 <= bottom && bottom < H_) for (int32 x = left; x <= right; x++) if (grid[x][bottom] != 0) { hitsBottom = true; break; }
+		if (0 <= left   && left   < W_) for (int32 y = bottom; y <= top; y++) {
+			int32 tileId = grid[left][y];
+			if ((tiles[tileId].flags & 1) != 0) { hitsLeft = true;   break; }
+		}
+		if (0 <= right  && right  < W_) for (int32 y = bottom; y <= top; y++) {
+			int32 tileId = grid[right][y];
+			if ((tiles[tileId].flags & 1) != 0) { hitsRight = true;  break; }
+		}
+		if (0 <= top    && top    < H_) for (int32 x = left; x <= right; x++) {
+			int32 tileId = grid[x][top];
+			if ((tiles[tileId].flags & 1) != 0) { hitsTop = true;    break; }
+		}
+		if (0 <= bottom && bottom < H_) for (int32 x = left; x <= right; x++) {
+			int32 tileId = grid[x][bottom];
+			if ((tiles[tileId].flags & 1) != 0) { hitsBottom = true; break; }
+		}
 
 		pixels pointLeft   = (left   + 0.5f)*64.0f + player.hitBox.radius;
 		pixels pointRight  = (right  - 0.5f)*64.0f - player.hitBox.radius;
@@ -364,7 +376,7 @@ void GameUpdateAndRender(uint32 keysPressed, milliseconds deltaTime, MouseEventQ
 		if (tileId == 0)
 			continue;
 
-		Tile tile = sprites[tileId];
+		Tile tile = tiles[tileId];
 		Render(
 			tile.tileset, tile.crop,
 			{x*64.0f-camerax, y*64.0f-cameray},

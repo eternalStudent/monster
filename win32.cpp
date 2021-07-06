@@ -48,8 +48,6 @@ static Dimensions2i windowDim;
 #define Smooth								GL_LINEAR
 #define Pixelated							GL_NEAREST
 
-static TextureHandle blackTexture;
-
 #include "font.cpp"
 static BakedFont debugFont;
 #define DebugPrintText(x, y, text)			PrintText(debugFont, x, y, text)
@@ -348,8 +346,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 	//float32 gameUpdateHz = (float32)((win32RefreshRate > 1) ? win32RefreshRate : 60);
 	//uint32 expectedFramesPerUpdate = 1;
 	//float32 targetSecondsPerFrame = (float32)expectedFramesPerUpdate / (float32)gameUpdateHz;
-	Init();
 	SpritesInit();
+	Init();
 
 	LARGE_INTEGER frequency, startTime, endTime;
 	QueryPerformanceFrequency(&frequency);
