@@ -220,15 +220,9 @@ void RenderElements(GUI gui) {
         Box2 pos = GetAbsolutePosition(element, gui.elements);
         Sprite sprite = element.background;
         if (index == gui.elementIndex && gui.isPressed){
-            RenderBox2(
-                blackBrush.texture, blackBrush.crop,
-                pos);
-            RenderBox2(
-                sprite.texture, sprite.crop,
-                Box_MoveBy(pos, {2, -2}));
+            RenderSprite(blackBrush, pos);
+            RenderSprite(sprite, Box_MoveBy(pos, {2, -2}));
         }
-        else RenderBox2(
-            sprite.texture, sprite.crop,
-            pos);
+        else RenderSprite(sprite, pos);
     }
 }
