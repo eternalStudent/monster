@@ -2,7 +2,7 @@ struct UIElement {
     int32 index;
     int32 parent;
 
-    // Why am I using floating points here anyway??
+    // TODO: maybe Box2 is not right for this, p0 and dimensions is a better fit
     union {
     	Box2 box;
     	struct {Position2 p0, p1;};
@@ -20,9 +20,9 @@ struct UIElement {
 
 struct GUI {
     UIElement* elements;
+    UIElement* active;
     int32* renderOrder; // NOTE: the front is 0
     int32 elementCount;
-    int32 elementIndex;
     Position2 originalPos;
     Position2 grabPos;
 
@@ -40,11 +40,11 @@ inline UIElement* GetNewElement(GUI* gui) {
     return element;
 }
 
-inline Box2 GetAbsolutePosition(UIElement element, UIElement* elements) {
+inline Box2 GetAbsolutePosition(GUI gui, UIElement element) {
     if (element.parent == 0)
         return element.box;
 
-    Box2 parentPos = GetAbsolutePosition(elements[element.parent], elements);
+    Box2 parentPos = GetAbsolutePosition(gui, gui.elements[element.parent]);
     Box2 absolute;
     absolute.x0 = parentPos.x0 + element.x0;
     absolute.y0 = parentPos.y0 + element.y0;
@@ -53,16 +53,16 @@ inline Box2 GetAbsolutePosition(UIElement element, UIElement* elements) {
     return absolute;
 }
 
-inline bool IsInsideBox(UIElement element, Position2 pos, UIElement* elements) {
-    return IsInsideBox(GetAbsolutePosition(element, elements), pos);
+inline bool IsInsideBox(GUI gui, UIElement element, Position2 pos) {
+    return IsInsideBox(GetAbsolutePosition(gui, element), pos);
 }
 
-inline bool IsInBottomRight(UIElement element, Position2 pos, UIElement* elements) {
-    Box2 box = GetAbsolutePosition(element, elements);
+inline bool IsInBottomRight(GUI gui, UIElement element, Position2 pos) {
+    Box2 box = GetAbsolutePosition(gui, element);
     return box.x1-4 <= pos.x && pos.y <= box.y1+4;
 }
 
-void SetPosition(UIElement* element, pixels x0, pixels y0, UIElement* elements) {
+void SetPosition(GUI gui, UIElement* element, pixels x0, pixels y0) {
     pixels width = element->x1 - element->x0;
     pixels height = element->y1 - element->y0;
     Position2 p0;
@@ -71,7 +71,7 @@ void SetPosition(UIElement* element, pixels x0, pixels y0, UIElement* elements) 
         p0 = {x0,y0};
     }
     else {
-        UIElement parent = elements[element->parent];
+        UIElement parent = gui.elements[element->parent];
 
         if (x0 < 0) p0.x = 0;
         else if (x0+width > parent.x1-parent.x0) p0.x = parent.x1-parent.x0-width;
@@ -87,16 +87,17 @@ void SetPosition(UIElement* element, pixels x0, pixels y0, UIElement* elements) 
     element->y1 = p0.y + height;
 }
 
-inline int32 GetElementIndexByPos(Position2 pos, GUI gui) {
+inline UIElement* GetElementByPos(GUI gui, Position2 pos) {
     for(int32 i = 0; i < gui.elementCount; i++) {
-        if (IsInsideBox(gui.elements[gui.renderOrder[i]], pos, gui.elements)) {
-            return gui.renderOrder[i];
+        int32 elementIndex = gui.renderOrder[i];
+        if (IsInsideBox(gui, gui.elements[elementIndex], pos)) {
+            return &gui.elements[elementIndex];
         }   
     }
-    return 0;
+    return NULL;
 }
 
-void MoveToFront(int32 index, GUI gui) {
+void MoveToFront(GUI gui, int32 index) {
     int32 orderIndex = 0;
     for(int32 i=0; i<gui.elementCount; i++) 
         if (gui.renderOrder[i] == index){orderIndex=i; break;}
@@ -106,16 +107,20 @@ void MoveToFront(int32 index, GUI gui) {
     gui.renderOrder[0] = index;
 
     for (int32 i=1; i<=gui.elementCount; i++)
-        if (gui.elements[i].parent == index) MoveToFront(i, gui);
+        if (gui.elements[i].parent == index) MoveToFront(gui, i);
 }
 
-void UpdateElement(UIElement* element, GUI gui, Position2 cursorPos) {
+inline void MoveToFront(GUI gui, UIElement* element) {
+    return MoveToFront(gui, element->index);
+}
+
+void UpdateElement(GUI gui, UIElement* element, Position2 cursorPos) {
     // Handle grabbing
     if (gui.isGrabbing && 
             (cursorPos.x != gui.grabPos.x || cursorPos.y != gui.grabPos.y)){
         pixels newx0  = gui.originalPos.x + cursorPos.x - gui.grabPos.x;
         pixels newy0 = gui.originalPos.y + cursorPos.y - gui.grabPos.y;
-        SetPosition(element, newx0, newy0, gui.elements);
+        SetPosition(gui, element, newx0, newy0);
     }
 
     // Handle resizing
@@ -140,14 +145,14 @@ void Win32SetCursorToArrow();
 void Win32SetCursorToResize();
 void Win32SetCursorToHand();
 
-UIElement* HandleCursorPosition(GUI* gui, Position2 cursorPos){
+void HandleCursorPosition(GUI* gui, Position2 cursorPos){
     gui->isBottomRight = false;
     if (!gui->isResizing && !gui->isGrabbing)
-    gui->elementIndex = GetElementIndexByPos(cursorPos, *gui);
-    UIElement* element = &(gui->elements[gui->elementIndex]);
+    gui->active = GetElementByPos(*gui, cursorPos);
+    UIElement* element = gui->active;
     Win32SetCursorToArrow();
-    if (gui->elementIndex != 0) {
-        if(IsInBottomRight(*element, cursorPos, gui->elements) && (element->flags & 2)){
+    if (element) {
+        if(IsInBottomRight(*gui, *element, cursorPos) && (element->flags & 2)){
             Win32SetCursorToResize();
             gui->isBottomRight = true;
         }
@@ -156,7 +161,6 @@ UIElement* HandleCursorPosition(GUI* gui, Position2 cursorPos){
             else if (element->flags & 1) Win32SetCursorToMove();        
         }
     }
-    return element;
 }
 
 // input
@@ -177,15 +181,16 @@ struct MouseEventQueue{
     int32 rear;
 };
 
-int32 HandleMouseEvent(MouseEventQueue* mouseEventQueue, GUI* gui, 
-                            UIElement* element, 
-                            Position2 cursorPos) {
+int32 HandleMouseEvent(GUI* gui, 
+                        MouseEventQueue* mouseEventQueue, 
+                        Position2 cursorPos) {
     if(!(mouseEventQueue->size))
         return {};
     int32 mouseEvent = Dequeue(mouseEventQueue);
     Assert(mouseEvent < 5)
-    if (mouseEvent == LDN && gui->elementIndex != 0){
-        MoveToFront(gui->elementIndex, *gui);
+    UIElement* element = gui->active;
+    if (mouseEvent == LDN && gui->active){
+        MoveToFront(*gui, element);
         if (element->flags & 4){
             gui->isPressed = true;
             if (element->onClick)
@@ -207,9 +212,9 @@ int32 HandleMouseEvent(MouseEventQueue* mouseEventQueue, GUI* gui,
 }
 
 int32 UpdateElements(GUI* gui, Position2 cursorPos, MouseEventQueue* mouseEventQueue){
-    UIElement* element = HandleCursorPosition(gui, cursorPos);
-    int32 mouseEvent = HandleMouseEvent(mouseEventQueue, gui, element, cursorPos);
-    UpdateElement(element, *gui, cursorPos);
+    HandleCursorPosition(gui, cursorPos);
+    int32 mouseEvent = HandleMouseEvent(gui, mouseEventQueue, cursorPos);
+    UpdateElement(*gui, element, cursorPos);
     return mouseEvent;
 }
 
@@ -217,9 +222,9 @@ void RenderElements(GUI gui) {
     for(int32 i=gui.elementCount-1; i>=0; i--){
         int32 index = gui.renderOrder[i];
         UIElement element = gui.elements[index];
-        Box2 pos = GetAbsolutePosition(element, gui.elements);
+        Box2 pos = GetAbsolutePosition(gui, element);
         Sprite sprite = element.background;
-        if (index == gui.elementIndex && gui.isPressed){
+        if (gui.active && gui.active->index == index && gui.isPressed){
             RenderSprite(blackBrush, pos);
             RenderSprite(sprite, Box_MoveBy(pos, {2, -2}));
         }

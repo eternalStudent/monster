@@ -136,7 +136,7 @@ void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2 cursorPos
 	Point2 cameraPos = Scale(*minicameraPos, 0.25f);
 
 	// Update grid
-	if (gui.elementIndex == 0 && selectedTileId != 0) {
+	if (!gui.active && selectedTileId) {
 		int32 tileX = (int32)((cursorPos.x + 32.0f) / 64.0f + cameraPos.x);
 		int32 tileY = (int32)(cursorPos.y / 64.0f + cameraPos.y);
 		if (mouseEvent == LDN){
@@ -190,11 +190,11 @@ void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2 cursorPos
 	str += CopyString(", ", 2, str); str += float32ToDecimal(cameraPos.y, 0, str); memcpy(str, ")", 2);
 	DebugPrintText(16, 32.0 * 27, buffer);
 
-	if (gui.elementIndex != 0) {
-		UIElement* element = &elements[gui.elementIndex];
+	if (gui.active) {
+		UIElement* element = gui.active;
 		str = buffer;
 		str += CopyString("element", 7, str);
-		str += int32ToDecimal(gui.elementIndex, str);
+		str += int32ToDecimal(gui.active->index, str);
 		str += CopyString(": {x0=", 6, str);
 		str += float32ToDecimal(element->x0, 1, str);
 		str += CopyString(" y0=", 4, str);

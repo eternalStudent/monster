@@ -9,3 +9,4 @@ build/.vs/monster/v16/Browse.VC.opendb
 build/.vs/monster/v16/.suo
 *.exp
 *.lib
+build/monster.sln
