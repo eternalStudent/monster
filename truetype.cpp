@@ -1,150 +1,97 @@
-struct buf {
-   byte* data;
-   int32 cursor;
-   int32 size;
-};
+// Compact Font Format table
+//--------------------------
 
-buf new_buf(byte* data, ssize size) {
-   buf r;
-   r.data = data;
-   r.size = (int32) size;
-   r.cursor = 0;
-   return r;
-}
-
-void buf_seek(buf* b, int32 o) {
-   Assert(!(o > b->size || o < 0));
-   b->cursor = (o > b->size || o < 0) ? b->size : o;
-}
-
-void buf_skip(buf* b, int32 o) {
-   buf_seek(b, b->cursor + o);
-}
-
-byte buf_get8(buf* b) {
-   if (b->cursor >= b->size)
-      return 0;
-   return b->data[b->cursor++];
-}
-
-byte buf_peek8(buf* b) {
-   if (b->cursor >= b->size)
-      return 0;
-   return b->data[b->cursor];
-}
-
-uint32 buf_get(buf* b, int32 n) {
-   uint32 v = 0;
-   int32 i;
-   Assert(n >= 1 && n <= 4);
-   for (i = 0; i < n; i++)
-      v = (v << 8) | buf_get8(b);
-   return v;
-}
-
-#define buf_get16(b)  buf_get((b), 2)
-#define buf_get32(b)  buf_get((b), 4)
-
-// NOTE: sub-range
-buf buf_range(const buf* b, int32 o, int32 s) {
-   buf r = new_buf(NULL, 0);
-   if (o < 0 || s < 0 || o > b->size || s > b->size - o) return r;
-   r.data = b->data + o;
-   r.size = s;
-   return r;
-}
-
-buf cff_get_index(buf* b) {
+Stream cff_get_index(Stream* data) {
    int32 count, start, offsize;
-   start = b->cursor;
-   count = buf_get16(b);
+   start = GetPosition(data);
+   count = ReadUint16BigEndian(data);
    if (count) {
-      offsize = buf_get8(b);
+      offsize = ReadByte(data);
       Assert(offsize >= 1 && offsize <= 4);
-      buf_skip(b, offsize * count);
-      buf_skip(b, buf_get(b, offsize) - 1);
+      Skip(data, offsize * count);
+      Skip(data, ReadUintNBigEndian(data, offsize) - 1);
    }
-   return buf_range(b, start, b->cursor - start);
+   return Subrange(data, start, GetPosition(data) - start);
 }
 
-uint32 cff_int(buf* b) {
-   int32 b0 = buf_get8(b);
+uint32 cff_int(Stream* data) {
+   int32 b0 = ReadByte(data);
    if (b0 >= 32 && b0 <= 246)       return b0 - 139;
-   else if (b0 >= 247 && b0 <= 250) return (b0 - 247)*256 + buf_get8(b) + 108;
-   else if (b0 >= 251 && b0 <= 254) return -(b0 - 251)*256 - buf_get8(b) - 108;
-   else if (b0 == 28)               return buf_get16(b);
-   else if (b0 == 29)               return buf_get32(b);
+   else if (b0 >= 247 && b0 <= 250) return (b0 - 247)*256 + ReadByte(data) + 108;
+   else if (b0 >= 251 && b0 <= 254) return -(b0 - 251)*256 - ReadByte(data) - 108;
+   else if (b0 == 28)               return ReadUint16BigEndian(data);
+   else if (b0 == 29)               return ReadUint32BigEndian(data);
    Assert(0);
    return 0;
 }
 
-void cff_skip_operand(buf* b) {
-   int32 v, b0 = buf_peek8(b);
+void cff_skip_operand(Stream* data) {
+   int32 v, b0 = PeekByte(data);
    Assert(b0 >= 28);
    if (b0 == 30) {
-      buf_skip(b, 1);
-      while (b->cursor < b->size) {
-         v = buf_get8(b);
+      Skip(data, 1);
+      while (GetPosition(data) < data->length) {
+         v = ReadByte(data);
          if ((v & 0xF) == 0xF || (v >> 4) == 0xF)
             break;
       }
    } else {
-      cff_int(b);
+      cff_int(data);
    }
 }
 
-buf dict_get(buf* b, int32 key) {
-   buf_seek(b, 0);
-   while (b->cursor < b->size) {
-      int32 start = b->cursor, end, op;
-      while (buf_peek8(b) >= 28)
-         cff_skip_operand(b);
-      end = b->cursor;
-      op = buf_get8(b);
-      if (op == 12)  op = buf_get8(b) | 0x100;
-      if (op == key) return buf_range(b, start, end-start);
+Stream dict_get(Stream* data, int32 key) {
+   Seek(data, 0);
+   while (GetPosition(data) < data->length) {
+      int32 start = GetPosition(data), end, op;
+      while (PeekByte(data) >= 28)
+         cff_skip_operand(data);
+      end = GetPosition(data);
+      op = ReadByte(data);
+      if (op == 12)  op = ReadByte(data) | 0x100;
+      if (op == key) return Subrange(data, start, end-start);
    }
-   return buf_range(b, 0, 0);
+   return Subrange(data, 0, 0);
 }
 
-void dict_get_ints(buf* b, int32 key, int32 outcount, uint32* out) {
+void dict_get_ints(Stream* data, int32 key, int32 outcount, uint32* out) {
    int32 i;
-   buf operands = dict_get(b, key);
-   for (i = 0; i < outcount && operands.cursor < operands.size; i++)
+   Stream operands = dict_get(data, key);
+   for (i = 0; i < outcount && GetPosition(operands) < operands.length; i++)
       out[i] = cff_int(&operands);
 }
 
-buf cff_index_get(buf b, int32 i) {
+Stream cff_index_get(Stream data, int32 i) {
    int32 count, offsize, start, end;
-   buf_seek(&b, 0);
-   count = buf_get16(&b);
-   offsize = buf_get8(&b);
+   Seek(&data, 0);
+   count = ReadUint16BigEndian(&data);
+   offsize = ReadByte(&data);
    Assert(i >= 0 && i < count);
    Assert(offsize >= 1 && offsize <= 4);
-   buf_skip(&b, i*offsize);
-   start = buf_get(&b, offsize);
-   end = buf_get(&b, offsize);
-   return buf_range(&b, 2+(count+1)*offsize+start, end - start);
+   Skip(&data, i*offsize);
+   start = ReadUintNBigEndian(&data, offsize);
+   end = ReadUintNBigEndian(&data, offsize);
+   return Subrange(&data, 2+(count+1)*offsize+start, end - start);
 }
 
-buf get_subrs(buf cff, buf fontdict) {
+Stream get_subrs(Stream cff, Stream fontdict) {
    uint32 subrsoff = 0, private_loc[2] = { 0, 0 };
-   buf pdict;
+   Stream pdict;
    dict_get_ints(&fontdict, 18, 2, private_loc);
-   if (!private_loc[1] || !private_loc[0]) return new_buf(NULL, 0);
-   pdict = buf_range(&cff, private_loc[1], private_loc[0]);
+   if (!private_loc[1] || !private_loc[0]) return {};
+   pdict = Subrange(&cff, private_loc[1], private_loc[0]);
    dict_get_ints(&pdict, 19, 1, &subrsoff);
-   if (!subrsoff) return new_buf(NULL, 0);
-   buf_seek(&cff, private_loc[1]+subrsoff);
+   if (!subrsoff) return {};
+   Seek(&cff, private_loc[1]+subrsoff);
    return cff_get_index(&cff);
 }
 
-int32 cff_index_count(buf *b) {
-   buf_seek(b, 0);
-   return buf_get16(b);
+int32 cff_index_count(Stream* data) {
+   Seek(data, 0);
+   return ReadUint16BigEndian(data);
 }
 
-buf get_subr(buf idx, int n) {
+Stream get_subr(Stream idx, int n) {
    int32 count = cff_index_count(&idx);
    int32 bias = 107;
    if (count >= 33900)
@@ -153,7 +100,7 @@ buf get_subr(buf idx, int n) {
       bias = 1131;
    n += bias;
    if (n < 0 || n >= count)
-      return new_buf(NULL, 0);
+      return {};
    return cff_index_get(idx, n);
 }
 
@@ -167,30 +114,30 @@ struct FontInfo {
    int32 index_map;            // a cmap mapping for our chosen character encoding
    int32 indexToLocFormat;     // format needed to map from glyph index to glyph
 
-   buf cff;                    // cff font data
-   buf charstrings;            // the charstring index
-   buf gsubrs;                 // global charstring subroutines index
-   buf subrs;                  // private charstring subroutines index
-   buf fontdicts;              // array of font dicts
-   buf fdselect;               // map from glyph to fontdict
+   Stream cff;                    // cff font data
+   Stream charstrings;            // the charstring index
+   Stream gsubrs;                 // global charstring subroutines index
+   Stream subrs;                  // private charstring subroutines index
+   Stream fontdicts;              // array of font dicts
+   Stream fdselect;               // map from glyph to fontdict
 };
 
-buf cid_get_glyph_subrs(const FontInfo* info, int32 glyph_index) {
-   buf fdselect = info->fdselect;
+Stream cid_get_glyph_subrs(const FontInfo* info, int32 glyph_index) {
+   Stream fdselect = info->fdselect;
    int32 nranges, start, end, v, fmt, fdselector = -1, i;
 
-   buf_seek(&fdselect, 0);
-   fmt = buf_get8(&fdselect);
+   Seek(&fdselect, 0);
+   fmt = ReadByte(&fdselect);
    if (fmt == 0) {
       // untested
-      buf_skip(&fdselect, glyph_index);
-      fdselector = buf_get8(&fdselect);
+      Skip(&fdselect, glyph_index);
+      fdselector = ReadByte(&fdselect);
    } else if (fmt == 3) {
-      nranges = buf_get16(&fdselect);
-      start = buf_get16(&fdselect);
+      nranges = ReadUint16BigEndian(&fdselect);
+      start = ReadUint16BigEndian(&fdselect);
       for (i = 0; i < nranges; i++) {
-         v = buf_get8(&fdselect);
-         end = buf_get16(&fdselect);
+         v = ReadByte(&fdselect);
+         end = ReadUint16BigEndian(&fdselect);
          if (glyph_index >= start && glyph_index < end) {
             fdselector = v;
             break;
@@ -198,7 +145,7 @@ buf cid_get_glyph_subrs(const FontInfo* info, int32 glyph_index) {
          start = end;
       }
    }
-   if (fdselector == -1) new_buf(NULL, 0);
+   if (fdselector == -1) return {};
    return get_subrs(info->cff, cff_index_get(info->fontdicts, fdselector));
 }
 
@@ -246,22 +193,22 @@ enum {
    MS_EID_UNICODE_FULL  =10
 };
 
-int32 GetFontInfo(FontInfo* info, byte* data, int32 fontstart) {
+int32 GetFontInfo(FontInfo* info, byte* buffer, int32 fontstart) {
    uint32 cmap, t;
    int32 i,numTables;
 
-   info->data = data;
+   info->data = buffer;
    info->fontstart = fontstart;
-   info->cff = new_buf(NULL, 0);
+   info->cff = {};
 
-   cmap = find_table(data, fontstart, "cmap");       // required
-   info->loca = find_table(data, fontstart, "loca"); // required
-   info->head = find_table(data, fontstart, "head"); // required
-   info->glyf = find_table(data, fontstart, "glyf"); // required
-   info->hhea = find_table(data, fontstart, "hhea"); // required
-   info->hmtx = find_table(data, fontstart, "hmtx"); // required
-   info->kern = find_table(data, fontstart, "kern"); // not required
-   info->gpos = find_table(data, fontstart, "GPOS"); // not required
+   cmap = find_table(buffer, fontstart, "cmap");       // required
+   info->loca = find_table(buffer, fontstart, "loca"); // required
+   info->head = find_table(buffer, fontstart, "head"); // required
+   info->glyf = find_table(buffer, fontstart, "glyf"); // required
+   info->hhea = find_table(buffer, fontstart, "hhea"); // required
+   info->hmtx = find_table(buffer, fontstart, "hmtx"); // required
+   info->kern = find_table(buffer, fontstart, "kern"); // not required
+   info->gpos = find_table(buffer, fontstart, "GPOS"); // not required
 
    if (!cmap || !info->head || !info->hhea || !info->hmtx)
       return 0;
@@ -270,37 +217,37 @@ int32 GetFontInfo(FontInfo* info, byte* data, int32 fontstart) {
       if (!info->loca) return 0;
    } else {
       // initialization for CFF / Type2 fonts (OTF)
-      buf b, topdict, topdictidx;
+      Stream data, topdict, topdictidx;
       uint32 cstype = 2, charstrings = 0, fdarrayoff = 0, fdselectoff = 0;
       uint32 cff;
 
-      cff = find_table(data, fontstart, "CFF ");
+      cff = find_table(buffer, fontstart, "CFF ");
       if (!cff) return 0;
 
-      info->fontdicts = new_buf(NULL, 0);
-      info->fdselect = new_buf(NULL, 0);
+      info->fontdicts = {};
+      info->fdselect = {};
 
       // @TODO this should use size from table (not 512MB)
-      info->cff = new_buf(data+cff, 512*1024*1024);
-      b = info->cff;
+      info->cff = CreateNewStream(buffer+cff, 512*1024*1024);
+      data = info->cff;
 
       // read the header
-      buf_skip(&b, 2);
-      buf_seek(&b, buf_get8(&b)); // hdrsize
+      Skip(&data, 2);
+      Seek(&data, ReadByte(&data)); // hdrsize
 
       // @TODO the name INDEX could list multiple fonts,
       // but we just use the first one.
-      cff_get_index(&b);  // name INDEX
-      topdictidx = cff_get_index(&b);
+      cff_get_index(&data);  // name INDEX
+      topdictidx = cff_get_index(&data);
       topdict = cff_index_get(topdictidx, 0);
-      cff_get_index(&b);  // string INDEX
-      info->gsubrs = cff_get_index(&b);
+      cff_get_index(&data);  // string INDEX
+      info->gsubrs = cff_get_index(&data);
 
       dict_get_ints(&topdict, 17, 1, &charstrings);
       dict_get_ints(&topdict, 0x100 | 6, 1, &cstype);
       dict_get_ints(&topdict, 0x100 | 36, 1, &fdarrayoff);
       dict_get_ints(&topdict, 0x100 | 37, 1, &fdselectoff);
-      info->subrs = get_subrs(b, topdict);
+      info->subrs = get_subrs(data, topdict);
 
       // we only support Type 2 charstrings
       if (cstype != 2) return 0;
@@ -309,18 +256,18 @@ int32 GetFontInfo(FontInfo* info, byte* data, int32 fontstart) {
       if (fdarrayoff) {
          // looks like a CID font
          if (!fdselectoff) return 0;
-         buf_seek(&b, fdarrayoff);
-         info->fontdicts = cff_get_index(&b);
-         info->fdselect = buf_range(&b, fdselectoff, b.size-fdselectoff);
+         Seek(&data, fdarrayoff);
+         info->fontdicts = cff_get_index(&data);
+         info->fdselect = Subrange(&data, fdselectoff, data.length-fdselectoff);
       }
 
-      buf_seek(&b, charstrings);
-      info->charstrings = cff_get_index(&b);
+      Seek(&data, charstrings);
+      info->charstrings = cff_get_index(&data);
    }
 
-   t = find_table(data, fontstart, "maxp");
+   t = find_table(buffer, fontstart, "maxp");
    if (t)
-      info->numGlyphs = __USHORT(data+t+4);
+      info->numGlyphs = __USHORT(buffer+t+4);
    else
       info->numGlyphs = 0xffff;
 
@@ -329,32 +276,32 @@ int32 GetFontInfo(FontInfo* info, byte* data, int32 fontstart) {
    // find a cmap encoding table we understand *now* to avoid searching
    // later. (todo: could make this installable)
    // the same regardless of glyph.
-   numTables = __USHORT(data + cmap + 2);
+   numTables = __USHORT(buffer + cmap + 2);
    info->index_map = 0;
    for (i=0; i < numTables; ++i) {
       uint32 encoding_record = cmap + 4 + 8 * i;
       // find an encoding we understand:
-      switch(__USHORT(data+encoding_record)) {
+      switch(__USHORT(buffer+encoding_record)) {
          case PLATFORM_ID_MICROSOFT:
-            switch (__USHORT(data+encoding_record+2)) {
+            switch (__USHORT(buffer+encoding_record+2)) {
                case MS_EID_UNICODE_BMP:
                case MS_EID_UNICODE_FULL:
                   // MS/Unicode
-                  info->index_map = cmap + __ULONG(data+encoding_record+4);
+                  info->index_map = cmap + __ULONG(buffer+encoding_record+4);
                   break;
             }
             break;
         case PLATFORM_ID_UNICODE:
             // Mac/iOS has these
             // all the encodingIDs are unicode, so we don't bother to check it
-            info->index_map = cmap + __ULONG(data+encoding_record+4);
+            info->index_map = cmap + __ULONG(buffer+encoding_record+4);
             break;
       }
    }
    if (info->index_map == 0)
       return 0;
 
-   info->indexToLocFormat = __USHORT(data+info->head + 50);
+   info->indexToLocFormat = __USHORT(buffer+info->head + 50);
    return 1;
 }
 
@@ -559,15 +506,15 @@ int32 run_charstring(const FontInfo* info, int32 glyph_index, csctx* c) {
    int32 in_header = 1, maskbits = 0, subr_stack_height = 0, sp = 0, v, i, b0;
    int32 has_subrs = 0, clear_stack;
    float32 s[48];
-   buf subr_stack[10], subrs = info->subrs, b;
+   Stream subr_stack[10], subrs = info->subrs, data;
    float32 f;
 
    // this currently ignores the initial width value, which isn't needed if we have hmtx
-   b = cff_index_get(info->charstrings, glyph_index);
-   while (b.cursor < b.size) {
+   data = cff_index_get(info->charstrings, glyph_index);
+   while (GetPosition(data) < data.length) {
       i = 0;
       clear_stack = 1;
-      b0 = buf_get8(&b);
+      b0 = ReadByte(&data);
       switch (b0) {
       // @TODO implement hinting
       case 0x13: // hintmask
@@ -575,7 +522,7 @@ int32 run_charstring(const FontInfo* info, int32 glyph_index, csctx* c) {
          if (in_header)
             maskbits += (sp / 2); // implicit "vstem"
          in_header = 0;
-         buf_skip(&b, (maskbits + 7) / 8);
+         Skip(&data, (maskbits + 7) / 8);
          break;
 
       case 0x01: // hstem
@@ -680,7 +627,7 @@ int32 run_charstring(const FontInfo* info, int32 glyph_index, csctx* c) {
 
       case 0x0A: // callsubr
          if (!has_subrs) {
-            if (info->fdselect.size)
+            if (info->fdselect.length)
                subrs = cid_get_glyph_subrs(info, glyph_index);
             has_subrs = 1;
          }
@@ -689,16 +636,16 @@ int32 run_charstring(const FontInfo* info, int32 glyph_index, csctx* c) {
          if (sp < 1) return Fail("call(g|)subr stack");
          v = (int) s[--sp];
          if (subr_stack_height >= 10) return Fail("recursion limit");
-         subr_stack[subr_stack_height++] = b;
-         b = get_subr(b0 == 0x0A ? subrs : info->gsubrs, v);
-         if (b.size == 0) return Fail("subr not found");
-         b.cursor = 0;
+         subr_stack[subr_stack_height++] = data;
+         data = get_subr(b0 == 0x0A ? subrs : info->gsubrs, v);
+         if (data.length == 0) return Fail("subr not found");
+         data.current = data.begin;
          clear_stack = 0;
          break;
 
       case 0x0B: // return
          if (subr_stack_height <= 0) return Fail("return outside subr");
-         b = subr_stack[--subr_stack_height];
+         data = subr_stack[--subr_stack_height];
          clear_stack = 0;
          break;
 
@@ -709,7 +656,7 @@ int32 run_charstring(const FontInfo* info, int32 glyph_index, csctx* c) {
       case 0x0C: { // two-byte escape
          float32 dx1, dx2, dx3, dx4, dx5, dx6, dy1, dy2, dy3, dy4, dy5, dy6;
          float32 dx, dy;
-         int32 b1 = buf_get8(&b);
+         int32 b1 = ReadByte(&data);
          switch (b1) {
          // @TODO These "flex" implementations ignore the flex-depth and resolution,
          // and always draw beziers.
@@ -794,10 +741,10 @@ int32 run_charstring(const FontInfo* info, int32 glyph_index, csctx* c) {
 
          // push immediate
          if (b0 == 255) {
-            f = (float32)(int32)buf_get32(&b) / 0x10000;
+            f = (float32)(int32)ReadUint32BigEndian(&data) / 0x10000;
          } else {
-            buf_skip(&b, -1);
-            f = (float32)(int16)cff_int(&b);
+            Skip(&data, -1);
+            f = (float32)(int16)cff_int(&data);
          }
          if (sp >= 48) return Fail("push stack overflow");
          s[sp++] = f;
@@ -823,7 +770,7 @@ int32 GetGlyphInfoT2(const FontInfo* info, int32 glyph_index,
 int32 GetGlyfOffset(const FontInfo* info, int32 glyph_index) {
    int32 g1,g2;
 
-   Assert(!info->cff.size);
+   Assert(!info->cff.length);
 
    if (glyph_index >= info->numGlyphs) return -1; // glyph index out of range
    if (info->indexToLocFormat >= 2)    return -1; // unknown index->glyph map format
@@ -841,7 +788,7 @@ int32 GetGlyfOffset(const FontInfo* info, int32 glyph_index) {
 
 int32 GetGlyphBox(const FontInfo* info, int32 glyph_index, 
                 int32* x0, int32* y0, int32* x1, int32* y1) {
-   if (info->cff.size) {
+   if (info->cff.length) {
       GetGlyphInfoT2(info, glyph_index, x0, y0, x1, y1);
    } else {
       int32 g = GetGlyfOffset(info, glyph_index);
@@ -1140,7 +1087,7 @@ int32 GetGlyphShapeT2(const FontInfo* info, int32 glyph_index, vertex** pvertice
 }
 
 int32 GetGlyphShape(const FontInfo* info, int32 glyph_index, vertex** pvertices) {
-   if (!info->cff.size)
+   if (!info->cff.length)
       return GetGlyphShapeTT(info, glyph_index, pvertices);
    else
       return GetGlyphShapeT2(info, glyph_index, pvertices);
