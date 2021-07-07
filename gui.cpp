@@ -154,7 +154,7 @@ void Win32SetCursorToHand();
 void HandleCursorPosition(GUI* gui, Position2 cursorPos){
     gui->isBottomRight = false;
     if (!gui->isResizing && !gui->isGrabbing)
-    gui->active = GetElementByPos(*gui, cursorPos);
+        gui->active = GetElementByPos(*gui, cursorPos);
     UIElement* element = gui->active;
     Win32SetCursorToArrow();
     if (element) {

@@ -251,13 +251,16 @@ void Collision(milliseconds deltaTime) {
 		}
 		if (0 <= bottom && bottom < H_) for (int32 x = left; x <= right; x++) {
 			uint32 flags = tiles[grid[x][bottom]].flags;
-			if (flags & 1) hitsBottom = true;
+			uint32 flags1up = tiles[grid[x][bottom+1]].flags;
+			if ((flags & 1) && !(flags1up & 1)) {
+				hitsBottom = true;
+			}
 			if (flags & 2) grid[x][bottom] = 0;
 		}
 
-		pixels pointLeft   = (left   + 0.5f)*64.0f + player.hitBox.radius;
-		pixels pointRight  = (right  - 0.5f)*64.0f - player.hitBox.radius;
-		pixels pointTop    = (top    - 0.0f)*64.0f - player.hitBox.height;
+		pixels pointLeft   = (left   + 0.5f)*64.0f + player.hitBox.radius + 1;
+		pixels pointRight  = (right  - 0.5f)*64.0f - player.hitBox.radius - 1;
+		pixels pointTop    = (top    - 0.0f)*64.0f - player.hitBox.height - 1;
 		pixels pointBottom = (bottom + 1.0f)*64.0f;
 
 		milliseconds timeToTop = (player.velocity.y != 0 && player.y <= pointTop)?
@@ -278,25 +281,27 @@ void Collision(milliseconds deltaTime) {
 			if (atEpsilonSpeed && player.velocity.y <= 0 && hitsBottom) {
 				if (projectedY < pointBottom)
 					player.y = pointBottom;
-				player.velocity.y = 0;
+				player.velocity.y = 0.0f;
 				player.onGround = true;
 				break;
 			}
 			else if (!atEpsilonSpeed && player.velocity.y <= 0) {
 				if (hitsLeft && player.velocity.x < 0) {
 					if (!hitsBottom || (hitsBottom && timeToLeft < timeToBottom)) {
-						if (projectedX < pointLeft)
+						if (projectedX < pointLeft && pointLeft < player.x)
 							player.x = pointLeft;
 						player.velocity.x = -speedEpsilon;
 						remainingTime -= timeToLeft;
+						continue;
 					}
 				}
 				if (hitsRight && player.velocity.x > 0) {
 					if (!hitsBottom || (hitsBottom && timeToRight < timeToBottom)) {
-						if (projectedX > pointRight)
+						if (player.x < pointRight && pointRight < projectedX)
 							player.x = pointRight;
 						player.velocity.x = speedEpsilon;
 						remainingTime -= timeToRight;
+						continue;
 					}
 				}
 				if (hitsBottom && player.velocity.y != 0) {
@@ -306,38 +311,42 @@ void Collision(milliseconds deltaTime) {
 						player.velocity.y = 0;
 						player.onGround = true;
 						remainingTime -= timeToBottom;
+						continue;
 					}
 				}
 			}
 			else if (atEpsilonSpeed && player.velocity.y > 0) {
 				if (projectedY > pointTop)
 					player.y = pointTop;
-				player.velocity.y = -0.001f;
+				player.velocity.y = 0.0f;
 				break;
 			}
 			else if (!atEpsilonSpeed && player.velocity.y > 0) {
 				if (hitsLeft) {
-					if (!hitsBottom || (hitsTop && timeToLeft <= timeToTop)) {
-						if (projectedX < pointLeft)
+					if (!hitsTop || (hitsTop && timeToLeft <= timeToTop)) {
+						if (projectedX < pointLeft && pointLeft < player.x)
 							player.x = pointLeft;
 						player.velocity.x = -speedEpsilon;
 						remainingTime -= timeToLeft;
+						continue;
 					}
 				}
 				if (hitsRight) {
 					if (!hitsTop || (hitsTop && timeToRight <= timeToTop)) {
-						if (projectedX > pointRight)
+						if (player.x < pointRight && pointRight < projectedX)
 							player.x = pointRight;
 						player.velocity.x = speedEpsilon;
 						remainingTime -= timeToRight;
+						continue;
 					}
 				}
 				if (hitsTop) {
 					if ((!hitsRight && !hitsLeft) || (hitsRight && timeToTop < timeToRight) || hitsLeft && timeToTop < timeToLeft) {
 						if (projectedY > pointTop)
 							player.y = pointTop;
-						player.velocity.y = -0.001f;
-						remainingTime -= timeToBottom;
+						player.velocity.y = 0.0f;
+						remainingTime -= timeToTop;
+						continue;
 					}
 				}
 			}
@@ -417,9 +426,11 @@ void GameUpdateAndRender(uint32 keysPressed, milliseconds deltaTime, MouseEventQ
 	str += CopyString("velocity.y: ", 12, str); float32ToDecimal(player.velocity.y, 2, str);
 	DebugPrintText(16, 32.0*24, buffer);
 	str = buffer;
-	str += CopyString("delta-time: ", 12, str); str += float32ToDecimal(deltaTime, 2, str); memcpy(str, "ms", 3);
+	str += CopyString("on ground: ", 11, str); int32ToDecimal((int32)player.onGround, str);
 	DebugPrintText(16, 32.0*23, buffer);
-
+	str = buffer;
+	str += CopyString("delta-time: ", 12, str); str += float32ToDecimal(deltaTime, 2, str); memcpy(str, "ms", 3);
+	DebugPrintText(16, 32.0*22, buffer);
 
 
 	str = buffer;

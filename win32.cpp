@@ -71,7 +71,9 @@ static BakedFont debugFont;
 
 /*
  *   TODO:
- *   - compute size of tiles
+ *   - compute size of sprites
+ *   - cross-compiler support
+ *   - re-do resizing elements
  */
 
 // Windows & Monitors
