@@ -35,12 +35,6 @@ struct Entity {
 static Entity player;
 
 // GUI stuff
-#define ElementCapacity 9
-
-static GUI gui = {};
-static UIElement elements[ElementCapacity+1] = {};
-static int32 renderOrder[ElementCapacity] = {};
-
 static float32* ui_accelaration;
 static float32* ui_jumpForce;
 static float32* ui_maxSpeed;
@@ -48,25 +42,14 @@ static float32* ui_gravity;
 static Position2* ui_text_box;
 
 void GameInit() {
-	bool load = LoadStream("level.dat", grid, sizeof(grid));
-	if (!load){
-		grid[4][6] = 1;
-		grid[6][8] = 1;
-		grid[7][8] = 1;
-		grid[8][8] = 1;
-		grid[5][3] = 1;
-		grid[0][3] = 1;
-		grid[1][3] = 1;
-	}
+	Game = 1;
+	gui.elementCount = 0;
 
 	player = {};
 	player.pos = {32.0f, 64.0f*4};
 	player.hitBox.height = 58.0f;
 	player.hitBox.radius = 10.0f;
 	player.texture = GenerateTextureFromFile("adventurer.bmp", Pixelated);
-
-	gui.elements = elements;
-	gui.renderOrder = renderOrder;
 
 	UIElement* container = GetNewElement(&gui);
 	container->p0 = {8.0f, 900.0f};

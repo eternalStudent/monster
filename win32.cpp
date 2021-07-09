@@ -56,18 +56,9 @@ static BakedFont debugFont;
 #include "tiles.cpp"
 #include "gui.cpp"
 
-#define Game 0
-#define Editor 1
-#if Game
-	#include "game.cpp"
-	#define Init 								GameInit
-#elif Editor
-	#include "editor.cpp"
-	#define Init 								EditorInit
-#else
-	#include "gui_playground.cpp"
-	#define Init 								PlaygroundInit
-#endif
+static int32 Game = 0;
+#include "game.cpp"
+#include "editor.cpp"
 
 /*
  *   TODO:
@@ -352,7 +343,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 	//float32 targetSecondsPerFrame = (float32)expectedFramesPerUpdate / (float32)gameUpdateHz;
 	TilesInit();
 	SpritesInit();
-	Init();
+	GuiInit();
+	EditorInit();
 
 	LARGE_INTEGER frequency, startTime, endTime;
 	QueryPerformanceFrequency(&frequency);
@@ -371,13 +363,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 		Win32ProcessPendingMessages(window, &keysPressed, &mouseEvent);
 		Position2 cursorPos = Win32GetCursorPosition(window);
 
-#if Game
-		GameUpdateAndRender(keysPressed, deltaTime, mouseEvent, cursorPos);
-#elif Editor 
-		EditorUpdateAndRender(mouseEvent, cursorPos);
-#else
-		PlaygroundUpdateAndRender(mouseEvent, cursorPos);
-#endif
+		if (Game)
+			GameUpdateAndRender(keysPressed, deltaTime, mouseEvent, cursorPos);
+		else 
+			EditorUpdateAndRender(mouseEvent, cursorPos);
+
 		
 		//Sleep(100.0/6.0 - deltaTime);
 

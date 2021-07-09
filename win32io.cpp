@@ -110,6 +110,7 @@ bool Win32SaveStream(const char* filePath, void* data, int32 bytesToWrite){
 
     DWORD bytesWritten;
     BOOL success = WriteFile(file, data, bytesToWrite, &bytesWritten, NULL);
+    CloseHandle(file);
     if (!success) return Fail("failed to write to the file");
     return true;
 }

@@ -221,3 +221,14 @@ void RenderElements(GUI gui) {
         else RenderSprite(sprite, pos);
     }
 }
+
+#define ElementCapacity 50
+
+static GUI gui = {};
+static UIElement elements[ElementCapacity+1] = {};
+static int32 renderOrder[ElementCapacity] = {};
+
+void GuiInit() {
+    gui.elements = elements;
+    gui.renderOrder = renderOrder;
+}

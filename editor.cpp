@@ -1,10 +1,4 @@
-#define ElementCapacity 50
-
-static GUI gui = {};
-static UIElement elements[ElementCapacity+1] = {};
-static int32 renderOrder[ElementCapacity] = {};
 static int32 tileIds[ElementCapacity] = {};
-
 static int32 selectedTileId = 0;
 
 TextureHandle* minimapTexture;
@@ -18,10 +12,11 @@ void Save(UIElement* element) {
 	SaveStream("level.dat", grid, sizeof(grid));
 }
 
-void EditorInit() {
-	gui.elements = elements;
-	gui.renderOrder = renderOrder;
+void Run(UIElement* element) {
+	GameInit();
+}
 
+void EditorInit() {
 	Brush strawYellow = GenerateBrush(0x88c1daff);
 	Brush grey1 = GenerateBrush(0xff999999);
 	Brush grey2 = GenerateBrush(0x88bbbbbb);
@@ -33,7 +28,7 @@ void EditorInit() {
 	tabControl->parent = 0;
 	tabControl->flags = 1;
 	tabControl->background = strawYellow;
-	renderOrder[40] = tabControl->index;
+	renderOrder[41] = tabControl->index;
 
 	UIElement* tabHead2 = GetNewElement(&gui);
 	tabHead2->p0 = {100.0f, 752.0f};
@@ -41,7 +36,7 @@ void EditorInit() {
 	tabHead2->parent = tabControl->index;
 	tabHead2->flags = 0;
 	tabHead2->background = grey3;
-	renderOrder[39] = tabHead2->index;
+	renderOrder[40] = tabHead2->index;
 
 	UIElement* tab2 = GetNewElement(&gui);
 	tab2->p0 = {-88.0f, -740.0f};
@@ -49,7 +44,7 @@ void EditorInit() {
 	tab2->parent = tabHead2->index;
 	tab2->flags = 0;
 	tab2->background = grey3;
-	renderOrder[38] = tab2->index;
+	renderOrder[39] = tab2->index;
 
 	for(int32 i = 1; i<=16; i++) {
 		UIElement* element = GetNewElement(&gui);
@@ -61,7 +56,7 @@ void EditorInit() {
 		tileIds[element->index] = i+16;
 		element->flags = 4;
 		element->onClick = &Select;
-		renderOrder[21+i]=element->index;
+		renderOrder[22+i]=element->index;
 	}
 
 	UIElement* tabHead1 = GetNewElement(&gui);
@@ -70,7 +65,7 @@ void EditorInit() {
 	tabHead1->parent = tabControl->index;
 	tabHead1->flags = 0;
 	tabHead1->background = grey1;
-	renderOrder[21] = tabHead1->index;
+	renderOrder[22] = tabHead1->index;
 
 	UIElement* tab1 = GetNewElement(&gui);
 	tab1->p0 = {0.0f, -740.0f};
@@ -78,7 +73,7 @@ void EditorInit() {
 	tab1->parent = tabHead1->index;
 	tab1->flags = 0;
 	tab1->background = grey1;
-	renderOrder[20] = tab1->index;
+	renderOrder[21] = tab1->index;
 
 	for(int32 i = 1; i<=16; i++) {
 		UIElement* element = GetNewElement(&gui);
@@ -90,23 +85,31 @@ void EditorInit() {
 		tileIds[element->index] = i;
 		element->flags = 4;
 		element->onClick = &Select;
-		renderOrder[3+i]=element->index;
+		renderOrder[4+i]=element->index;
 	}
 
 	UIElement* buttonParent = GetNewElement(&gui);
-	buttonParent->box = BOX2(80.0f, 950.0f, 220.0f, 1030.0f);
+	buttonParent->box = BOX2(80.0f, 950.0f, 370.0f, 1030.0f);
 	buttonParent->parent = 0;
 	buttonParent->flags = 1;
 	buttonParent->background = strawYellow;
-	renderOrder[3] = buttonParent->index;
+	renderOrder[4] = buttonParent->index;
 
-	UIElement* button = GetNewElement(&gui);
-	button->box = BOX2(10.0f, 10.0f, 130.0f, 70.0f);
-	button->parent = buttonParent->index;
-	button->flags = 4;
-	button->background = GenerateBrush(0xff998888);
-	button->onClick = &Save;
-	renderOrder[2] = button->index;
+	UIElement* saveButton = GetNewElement(&gui);
+	saveButton->box = BOX2(10.0f, 10.0f, 130.0f, 70.0f);
+	saveButton->parent = buttonParent->index;
+	saveButton->flags = 4;
+	saveButton->background = GenerateBrush(0xff998888);
+	saveButton->onClick = &Save;
+	renderOrder[3] = saveButton->index;
+
+	UIElement* runButton = GetNewElement(&gui);
+	runButton->box = BOX2(150.0f, 10.0f, 280.0f, 70.0f);
+	runButton->parent = buttonParent->index;
+	runButton->flags = 4;
+	runButton->background = GenerateBrush(0xff998888);
+	runButton->onClick = &Run;
+	renderOrder[2] = runButton->index;
 
 	UIElement* minimap = GetNewElement(&gui);
 	minimap->p0 = {1600.0f, 887.0f};
