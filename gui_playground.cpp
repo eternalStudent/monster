@@ -9,9 +9,9 @@ void PlaygroundInit() {
 	gui.renderOrder = renderOrder;
 }
 
-void PlaygroundUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2 cursorPos) {
+void PlaygroundUpdateAndRender(int32 mouseEvent, Position2 cursorPos) {
 	ClearScreen();
-	UpdateElements(&gui, cursorPos, mouseEventQueue);
+	UpdateElements(&gui, cursorPos, mouseEvent);
 	RenderElements(gui);
 
 	// Debug text

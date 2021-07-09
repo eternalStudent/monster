@@ -349,11 +349,11 @@ void Collision(milliseconds deltaTime) {
 	}
 }
 
-void GameUpdateAndRender(uint32 keysPressed, milliseconds deltaTime, MouseEventQueue* mouseEventQueue, Position2 cursorPos) {
+void GameUpdateAndRender(uint32 keysPressed, milliseconds deltaTime,int32 mouseEvent, Position2 cursorPos) {
 	if (deltaTime > 17.0f) deltaTime = 100.0f / 6.0f;
 
 	ClearScreen();
-	UpdateElements(&gui, cursorPos, mouseEventQueue);
+	UpdateElements(&gui, cursorPos, mouseEvent);
 
 	byte previousState = player.stateRow;
 	player.onGround = false;

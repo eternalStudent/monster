@@ -128,10 +128,10 @@ void EditorInit() {
 	LoadStream("level.dat", grid, sizeof(grid));
 }
 
-void EditorUpdateAndRender(MouseEventQueue* mouseEventQueue, Position2 cursorPos) {
+void EditorUpdateAndRender(int32 mouseEvent, Position2 cursorPos) {
 	ClearScreen();
 
-	int32 mouseEvent = UpdateElements(&gui, cursorPos, mouseEventQueue);
+	UpdateElements(&gui, cursorPos, mouseEvent);
 	
 	Point2 cameraPos = Scale(*minicameraPos, 0.25f);
 

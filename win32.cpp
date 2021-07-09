@@ -56,7 +56,7 @@ static BakedFont debugFont;
 #include "tiles.cpp"
 #include "gui.cpp"
 
-#define Game 1
+#define Game 0
 #define Editor 1
 #if Game
 	#include "game.cpp"
@@ -74,6 +74,7 @@ static BakedFont debugFont;
  *   - compute size of sprites
  *   - cross-compiler support
  *   - re-do resizing elements
+ *   - edit and run from same screen
  */
 
 // Windows & Monitors
@@ -195,7 +196,7 @@ Position2 Win32GetCursorPosition(HWND window){
 	return Position2{x, y};
 }
 
-void Win32ProcessPendingMessages(HWND window, uint32* keysPressed, MouseEventQueue* mouseEventQueue)
+void Win32ProcessPendingMessages(HWND window, uint32* keysPressed, int32* mouseEvent)
 {
 	MSG message;
 	while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
@@ -275,16 +276,16 @@ void Win32ProcessPendingMessages(HWND window, uint32* keysPressed, MouseEventQue
 			}
 		} break;
 		case WM_LBUTTONDOWN: {
-			Enqueue(mouseEventQueue, LDN);
+			*mouseEvent = LDN;
 		}break;
 		case WM_LBUTTONUP: {
-			Enqueue(mouseEventQueue, LUP);
+			*mouseEvent = LUP;
 		}break;
 		case WM_RBUTTONDOWN: {
-			Enqueue(mouseEventQueue, RDN);
+			*mouseEvent = RDN;
 		}break;
 		case WM_RBUTTONUP: {
-			Enqueue(mouseEventQueue, RUP);
+			*mouseEvent = RUP;
 		}break;
 
 		default:
@@ -360,23 +361,22 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 	running = true;
 	uint32 keysPressed = 0;
 	float32 deltaTime = 0.0f;
-	MouseEventQueue mouseEventQueue = {};
-	QReserve(&mouseEventQueue, 2);
 
 	while (running) {
 		ArenaFreeAll(&arena);
 		QueryPerformanceCounter(&endTime);
 		deltaTime = (float32)((endTime.QuadPart - startTime.QuadPart) * 1000) / (float32)frequency.QuadPart; // milliseconds
 		startTime = endTime;
-		Win32ProcessPendingMessages(window, &keysPressed, &mouseEventQueue);
+		int32 mouseEvent = 0;
+		Win32ProcessPendingMessages(window, &keysPressed, &mouseEvent);
 		Position2 cursorPos = Win32GetCursorPosition(window);
 
 #if Game
-		GameUpdateAndRender(keysPressed, deltaTime, &mouseEventQueue, cursorPos);
+		GameUpdateAndRender(keysPressed, deltaTime, mouseEvent, cursorPos);
 #elif Editor 
-		EditorUpdateAndRender(&mouseEventQueue, cursorPos);
+		EditorUpdateAndRender(mouseEvent, cursorPos);
 #else
-		PlaygroundUpdateAndRender(&mouseEventQueue, cursorPos);
+		PlaygroundUpdateAndRender(mouseEvent, cursorPos);
 #endif
 		
 		//Sleep(100.0/6.0 - deltaTime);

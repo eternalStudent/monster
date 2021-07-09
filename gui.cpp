@@ -169,30 +169,16 @@ void HandleCursorPosition(GUI* gui, Position2 cursorPos){
     }
 }
 
-// input
-
 #define LDN  1
 #define LUP  2
 #define RDN  3
 #define RUP  4
 
-struct MouseEventQueue{
-    union{
-        void* data;
-        int32* table;
-    };
-    int32 size;
-    int32 capacity;
-    int32 front;
-    int32 rear;
-};
-
-int32 HandleMouseEvent(GUI* gui, 
-                        MouseEventQueue* mouseEventQueue, 
+void HandleMouseEvent(GUI* gui, 
+                        int mouseEvent, 
                         Position2 cursorPos) {
-    if(!(mouseEventQueue->size))
-        return {};
-    int32 mouseEvent = Dequeue(mouseEventQueue);
+    if(!mouseEvent)
+        return;
     Assert(mouseEvent < 5)
     UIElement* element = gui->active;
     if (mouseEvent == LDN && gui->active){
@@ -214,14 +200,12 @@ int32 HandleMouseEvent(GUI* gui,
         gui->isResizing = false;
         gui->isPressed = false;
     }
-    return mouseEvent;
 }
 
-int32 UpdateElements(GUI* gui, Position2 cursorPos, MouseEventQueue* mouseEventQueue){
+void UpdateElements(GUI* gui, Position2 cursorPos, int32 mouseEvent){
     HandleCursorPosition(gui, cursorPos);
-    int32 mouseEvent = HandleMouseEvent(gui, mouseEventQueue, cursorPos);
+    HandleMouseEvent(gui, mouseEvent, cursorPos);
     UpdateActiveElement(*gui, cursorPos);
-    return mouseEvent;
 }
 
 void RenderElements(GUI gui) {
