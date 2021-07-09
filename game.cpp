@@ -213,6 +213,13 @@ void UpdatePlayerStatus(byte previousState, milliseconds deltaTime) {
 	}
 }
 
+inline float32 SafeDivNoNeg(float32 a, float32 b) {
+    if (a == 0) return 0;
+    if (b == 0) return INF32();
+    float32 result = a/b;
+    return result < 0 ? 0 : result;
+}
+
 void Collision(milliseconds deltaTime) {
 	milliseconds remainingTime = deltaTime;
 	for (uint32 i = 0; i < 4; i++) {
@@ -223,7 +230,9 @@ void Collision(milliseconds deltaTime) {
 		if (remainingTime <= 0 || atEpsilonSpeed && player.velocity.y == 0)
 			break;
 
-		pixels projectedX = player.x + player.velocity.x * remainingTime;
+		pixels projectedX = atEpsilonSpeed  
+			? player.x : 
+			player.x + player.velocity.x * remainingTime;
 		pixels projectedY = player.y + player.velocity.y * remainingTime;
 		if (projectedY < 0)
 			projectedY = 0;
@@ -251,8 +260,9 @@ void Collision(milliseconds deltaTime) {
 		}
 		if (0 <= bottom && bottom < H_) for (int32 x = left; x <= right; x++) {
 			uint32 flags = tiles[grid[x][bottom]].flags;
-			uint32 flags1up = tiles[grid[x][bottom+1]].flags;
-			if ((flags & 1) && !(flags1up & 1)) {
+			uint32 oneTileUpFlags = tiles[grid[x][bottom+1]].flags;
+			// NOTE: you can not stand on a block if one tile above it is blocked
+			if ((flags & 1) && !(oneTileUpFlags & 1)) {
 				hitsBottom = true;
 			}
 			if (flags & 2) grid[x][bottom] = 0;
@@ -263,14 +273,10 @@ void Collision(milliseconds deltaTime) {
 		pixels pointTop    = (top    - 0.0f)*64.0f - player.hitBox.height - 1;
 		pixels pointBottom = (bottom + 1.0f)*64.0f;
 
-		milliseconds timeToTop = (player.velocity.y != 0 && player.y <= pointTop)?
-			(pointTop - player.y) / player.velocity.y : INF32();
-		milliseconds timeToBottom = (player.velocity.y != 0 && player.y >= pointBottom)?
-			(pointBottom - player.y) / player.velocity.y : INF32();
-		milliseconds timeToLeft = (player.velocity.x != 0 && player.x >= pointLeft)?
-			(pointLeft - player.x) / player.velocity.x : INF32();
-		milliseconds timeToRight = (player.velocity.x != 0 && player.x <= pointRight)?
-			(pointRight - player.x) / player.velocity.x : INF32();
+		milliseconds timeToTop = SafeDivNoNeg(pointTop - player.y, player.velocity.y);
+		milliseconds timeToBottom = SafeDivNoNeg(pointBottom - player.y, player.velocity.y);
+		milliseconds timeToLeft = SafeDivNoNeg(pointLeft - player.x, player.velocity.x);
+		milliseconds timeToRight = SafeDivNoNeg(pointRight - player.x, player.velocity.x);
 
 		if (!hitsTop && !hitsBottom && !hitsLeft && !hitsRight) {
 			player.x = projectedX;
@@ -281,29 +287,11 @@ void Collision(milliseconds deltaTime) {
 			if (atEpsilonSpeed && player.velocity.y <= 0 && hitsBottom) {
 				if (projectedY < pointBottom)
 					player.y = pointBottom;
-				player.velocity.y = 0.0f;
+				player.velocity.y = 0;
 				player.onGround = true;
 				break;
 			}
 			else if (!atEpsilonSpeed && player.velocity.y <= 0) {
-				if (hitsLeft && player.velocity.x < 0) {
-					if (!hitsBottom || (hitsBottom && timeToLeft < timeToBottom)) {
-						if (projectedX < pointLeft && pointLeft < player.x)
-							player.x = pointLeft;
-						player.velocity.x = -speedEpsilon;
-						remainingTime -= timeToLeft;
-						continue;
-					}
-				}
-				if (hitsRight && player.velocity.x > 0) {
-					if (!hitsBottom || (hitsBottom && timeToRight < timeToBottom)) {
-						if (player.x < pointRight && pointRight < projectedX)
-							player.x = pointRight;
-						player.velocity.x = speedEpsilon;
-						remainingTime -= timeToRight;
-						continue;
-					}
-				}
 				if (hitsBottom && player.velocity.y != 0) {
 					if ((!hitsRight && !hitsLeft) || (hitsRight && timeToBottom <= timeToRight) || hitsLeft && timeToBottom <= timeToLeft) {
 						if (projectedY < pointBottom)
@@ -314,11 +302,14 @@ void Collision(milliseconds deltaTime) {
 						continue;
 					}
 				}
+				player.y = projectedY;
+				remainingTime -= timeToBottom;
+				continue;
 			}
 			else if (atEpsilonSpeed && player.velocity.y > 0) {
 				if (projectedY > pointTop)
 					player.y = pointTop;
-				player.velocity.y = 0.0f;
+				player.velocity.y = 0;
 				break;
 			}
 			else if (!atEpsilonSpeed && player.velocity.y > 0) {
@@ -344,17 +335,15 @@ void Collision(milliseconds deltaTime) {
 					if ((!hitsRight && !hitsLeft) || (hitsRight && timeToTop < timeToRight) || hitsLeft && timeToTop < timeToLeft) {
 						if (projectedY > pointTop)
 							player.y = pointTop;
-						player.velocity.y = 0.0f;
+						player.velocity.y = 0;
 						remainingTime -= timeToTop;
 						continue;
 					}
 				}
+				Assert(0);
 			}
 			else {
-				// weird edge cases
-				player.x = projectedX;
-				player.y = projectedY;
-				break;
+				Assert(0);
 			}
 		}
 	}
