@@ -16,8 +16,7 @@ void* ArenaAlloc(Arena* arena, ssize size, bool zero) {
 	if (size == 0) return NULL;
 
 	// compute divisibility of base-address by size
-	unsigned long index;
-	_BitScanForward(&index, (unsigned long)size); //xxxx1->0, xxx10->1, xx100->3, x1000->4, x00000->5  
+	int32 index = LowBit((uint32)size); //xxxx1->0, xxx10->1, xx100->3, x1000->4, x00000->5  
 	if (index > 5) index = 5;
 	uint32 divisibility = 1 << index;
 

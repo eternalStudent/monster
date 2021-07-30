@@ -4,27 +4,46 @@
 
 int32 HighBit(uint32 value, int32 onZero) {
 	if (value == 0) return onZero;
-#if __clang__ || __GNUC__
-	return 32-__builtin_clz(value);
-#elif _MSC_VER
+#if defined(__clang__) || defined(__GNUC__)
+	return 31-__builtin_clz(value);
+#elif defined(_MSC_VER)
 	unsigned long index;
 	_BitScanReverse(&index, value);
 	return (int32)index;
 #else
 	int32 n = 0;
-    if (value >= 0x10000) { n += 16; value >>= 16; }
-    if (value >= 0x00100) { n += 8; value >>= 8; }
-    if (value >= 0x00010) { n += 4; value >>= 4; }
-    if (value >= 0x00004) { n += 2; value >>= 2; }
-    if (value >= 0x00002) { n += 1;/* >>=  1;*/ }
+    if (value >= 0x10000) {n += 16; value >>= 16;}
+    if (value >= 0x00100) {n +=  8; value >>=  8;}
+    if (value >= 0x00010) {n +=  4; value >>=  4;}
+    if (value >= 0x00004) {n +=  2; value >>=  2;}
+    if (value >= 0x00002) {n +=  1;}
     return n;
 #endif
 }
 
+int32 LowBit(uint32 value) {
+	if (value == 0) return 32;
+#if defined(__clang__) || defined(__GNUC__)
+	return __builtin_ctz(value);
+#elif defined(_MSC_VER)
+	unsigned long index;
+	_BitScanForward(&index, value);
+	return (int32)index;
+#else
+	int32 n = 0;
+    if (!(value & 0x0000FFFF)) {n += 16; value >>= 16;}
+    if (!(value & 0x000000FF)) {n +=  8; value >>=  8;}
+    if (!(value & 0x0000000F)) {n +=  4; value >>=  4;}
+    if (!(value & 0x00000003)) {n +=  2; value >>=  2;}
+    if (!(value & 0x00000001)) {n +=  1;}
+    return n;
+#endif
+ }
+
 int32 BitCount(uint32 value) {
-#if __clang__ || __GNUC__
+#if defined(__clang__) || defined(__GNUC__)
 	return __builtin_popcount(value);
-#elif _MSC_VER
+#elif defined(_MSC_VER)
 	return __popcnt(value);
 #else
 	value = (value & 0x55555555) + ((value >> 1) & 0x55555555); // max 2
