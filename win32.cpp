@@ -1,11 +1,12 @@
 // include standard headers
 #include <Windows.h>
 #include <math.h>
-#include <intrin.h> // this is MSVC specific, should be replaced with cross-compiler header
+#include <intrin.h>
 #include <emmintrin.h>
 #include <memory.h>
 
 #include "types.h"
+#include "intrinsics.cpp"
 
 // define ssize and set arena-allocator as the allocator
 #define ssize int32

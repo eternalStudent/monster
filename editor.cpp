@@ -4,6 +4,8 @@ static int32 selectedTileId = 0;
 TextureHandle* minimapTexture;
 Position2* minicameraPos;
 
+static bool mouseIsDown = false;
+
 void Select(UIElement* element) {
 	selectedTileId = tileIds[element->index];
 }
@@ -138,11 +140,14 @@ void EditorUpdateAndRender(int32 mouseEvent, Position2 cursorPos) {
 	
 	Point2 cameraPos = Scale(*minicameraPos, 0.25f);
 
+	if (mouseEvent == LDN) mouseIsDown = true;
+	if (mouseEvent == LUP) mouseIsDown = false;
+
 	// Update grid
 	if (!gui.active && selectedTileId) {
 		int32 tileX = (int32)((cursorPos.x + 32.0f) / 64.0f + cameraPos.x);
 		int32 tileY = (int32)(cursorPos.y / 64.0f + cameraPos.y);
-		if (mouseEvent == LDN){
+		if (mouseIsDown){
 			grid[tileX][tileY] = selectedTileId;
 		}
 		else if (mouseEvent == RDN){

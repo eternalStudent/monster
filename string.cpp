@@ -1,7 +1,5 @@
 int32 uint32ToBinary(uint32 number, _Out_ char* str) {
-	unsigned long index;
-	unsigned long isNonzero = _BitScanReverse(&index, number);
-	if (!isNonzero) index = 0;
+	int32 index = HighBit(number, 0);
 	int32 numberOfDigits = index + 1;
 
 	str[numberOfDigits] = 0;
@@ -13,9 +11,7 @@ int32 uint32ToBinary(uint32 number, _Out_ char* str) {
 }
 
 int32 uint32ToHex(uint32 number, _Out_ char* str) {
-	unsigned long index;
-	unsigned long isNonzero = _BitScanReverse(&index, number);
-	index = (isNonzero) ? index /= 4 : index = 0;
+	int32 index = HighBit(number, 0) / 4;
 	int32 numberOfDigits = index + 1;
 
 	str[numberOfDigits] = 0;

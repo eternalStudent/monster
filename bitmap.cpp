@@ -2,29 +2,6 @@
 // Bit Operations 
 //------------------
 
-// returns 0..31 for the highest set bit
-// I can use intrinsic BitScanReverse
-int32 high_bit(uint32 z) {
-    int32 n = 0;
-    if (z == 0) return -1;
-    if (z >= 0x10000) { n += 16; z >>= 16; }
-    if (z >= 0x00100) { n += 8; z >>= 8; }
-    if (z >= 0x00010) { n += 4; z >>= 4; }
-    if (z >= 0x00004) { n += 2; z >>= 2; }
-    if (z >= 0x00002) { n += 1;/* >>=  1;*/ }
-    return n;
-}
-
-// I can use intrinsic popcnt
-int32 bitcount(uint32 a) {
-    a = (a & 0x55555555) + ((a >> 1) & 0x55555555); // max 2
-    a = (a & 0x33333333) + ((a >> 2) & 0x33333333); // max 4
-    a = (a + (a >> 4)) & 0x0f0f0f0f; // max 8 per 4, now 8 bits
-    a = (a + (a >> 8)); // max 16 per 8 bits
-    a = (a + (a >> 16)); // max 32 per 8 bits
-    return a & 0xff;
-}
-
 #define BYTECAST(x)  ((byte) ((x) & 255))  // truncate int32 to byte without warnings
 
 // extract an arbitrarily-aligned N-bit value (N=bits)
@@ -261,10 +238,10 @@ Image LoadBMP(byte* data){
         if (!easy) {
             if (!info.mr || !info.mg || !info.mb) { Free(image.data); return {}; }
             // right shift amt to put high bit in position #7
-            rshift = high_bit(info.mr) - 7; rcount = bitcount(info.mr);
-            gshift = high_bit(info.mg) - 7; gcount = bitcount(info.mg);
-            bshift = high_bit(info.mb) - 7; bcount = bitcount(info.mb);
-            ashift = high_bit(info.ma) - 7; acount = bitcount(info.ma);
+            rshift = HighBit(info.mr, -1) - 7; rcount = BitCount(info.mr);
+            gshift = HighBit(info.mg, -1) - 7; gcount = BitCount(info.mg);
+            bshift = HighBit(info.mb, -1) - 7; bcount = BitCount(info.mb);
+            ashift = HighBit(info.ma, -1) - 7; acount = BitCount(info.ma);
             if (rcount > 8 || gcount > 8 || bcount > 8 || acount > 8) { Free(image.data); return {}; }
         }
         for (j = 0; j < image.height; ++j) {
