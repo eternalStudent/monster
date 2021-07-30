@@ -1,7 +1,6 @@
 // include standard headers
 #include <Windows.h>
 #include <math.h>
-#include <intrin.h>
 #include <emmintrin.h>
 #include <memory.h>
 
