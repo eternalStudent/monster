@@ -139,10 +139,16 @@ void UpdatePlayerByInput(int32 keysPressed, milliseconds deltaTime) {
 	pixels_per_millisec_2 jumpForce = LoadExp(-5) + LoadExp(-13)*(*ui_jumpForce);
 	pixels_per_millisec maxSpeed = 0.5f + LoadExp(-9)*(*ui_maxSpeed);
 
-	if (keysPressed & JUMP && player.stateRow != STATE_JUMP && player.stateRow != STATE_FALL) {
-		player.velocity.y += deltaTime * jumpForce;
-		player.stateRow = STATE_JUMP;
+	if (keysPressed & JUMP) {
+		if (player.stateRow != STATE_JUMP && player.stateRow != STATE_FALL) {
+			player.velocity.y += deltaTime * jumpForce;
+			player.stateRow = STATE_JUMP;
+		}
 	}
+	else {
+		if (player.velocity.y > 0) player.velocity.y = 0;
+	}
+	
 
 	if (keysPressed & LEFT && player.velocity.x <= 0) {
 		player.velocity.x -= deltaTime * accelaration;
