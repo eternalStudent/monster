@@ -67,22 +67,19 @@ void WorldSetTile(Point2i cursorPos, byte tileId, TextureId minimap) {
 
 	DATA(tilePos.x, tilePos.y) = tileId;
 
-	__m128i v = tileId ? _mm_set1_epi32(RGBA_GREY) : _mm_set1_epi32(0x22413830);
-	__m128i data[4] = {v, v, v, v};
-	UpdateTextureData(minimap, 4*tilePos.x, 4*tilePos.y, 4, 4, data);
+	uint32 data = tileId ? RGBA_GREY : 0x22413830;
+	UpdateTextureData(minimap, tilePos.x, tilePos.y, 1, 1, &data);
 }
 
 void WorldReadData(const char* filePath, TextureId minimap) {
 	OsReadToBuffer(world.data, filePath);
 
-	__m128i* data = (__m128i*)ArenaAlloc(world.arena, (WORLD_WIDTH*4)*(WORLD_HEIGHT*4)*4);
-	for (int32 x=0; x<WORLD_WIDTH; x++) for (int32 i=0; i<4; i++) for (int32 y=0; y<WORLD_HEIGHT; y++) {
-		data[(y*4 + i)*WORLD_WIDTH + x] = DATA(x, y) 
-			? _mm_set1_epi32(RGBA_GREY) 
-			: _mm_set1_epi32(0x22413830);
+	uint32* data = (uint32*)ArenaAlloc(world.arena, WORLD_WIDTH*WORLD_HEIGHT*4);
+	for (int32 i = 0; i < WORLD_WIDTH*WORLD_HEIGHT; i++) {
+		data[i] = world.data[i] ? RGBA_GREY : 0x22413830;
 	}
 
-	UpdateTextureData(minimap, 0, 0, (WORLD_WIDTH*4), (WORLD_HEIGHT*4), data);
+	UpdateTextureData(minimap, 0, 0, WORLD_WIDTH, WORLD_HEIGHT, data);
 }
 
 void WorldWriteData(const char* filePath) {
@@ -90,8 +87,8 @@ void WorldWriteData(const char* filePath) {
 }
 
 void* WorldGetCleanMinimap() {
-	__m128i* data = (__m128i*)ArenaAlloc(world.arena, (WORLD_WIDTH*4)*(WORLD_HEIGHT*4)*4);
-	for (int32 i = 0; i<WORLD_WIDTH*WORLD_HEIGHT*4; i++) data[i] = _mm_set1_epi32(0x22413830);
+	__m128i* data = (__m128i*)ArenaAlloc(world.arena, WORLD_WIDTH*WORLD_HEIGHT*4);
+	for (int32 i = 0; i<WORLD_WIDTH*WORLD_HEIGHT; i++) data[i] = _mm_set1_epi32(0x22413830);
 	return data;
 }
 

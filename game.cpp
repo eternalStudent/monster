@@ -35,8 +35,11 @@ void GameRemovePlayer() {
 
 void GameUpdate(milliseconds deltaTime) {
 	if (!game.isPlayerExists) return;
+	Position2 prev = game.player.pos;
 	PhysicsUpdate(&game.player.body, &game.player.pos, deltaTime);
 	AnimationUpdate(&game.player.object, game.player.body, deltaTime);
+	if (prev.x != game.player.x || prev.y != game.player.y)
+		CameraMoveByPlayer(game.player.pos);
 }
 
 void GameDraw() {

@@ -60,7 +60,8 @@ void Init(Arena* persist, Arena* scratch) {
 	*font = LoadFont(scratch, "data/AzeretMono-Regular.ttf", 18, 0xffffff);
 
 	UIElement* control = UICreateTabControl(NULL, {298, 322});
-	control->pos = {1400, 150};
+	control->pos = {6, 150};
+	control->flags |= UI_RIGHT;
 
 	byte tileId = 1;
     UIElement* tab1 = UICreateTab(control, {72, 24}, STR("grass"), font);
@@ -96,6 +97,24 @@ void Init(Arena* persist, Arena* scratch) {
 	}
 
 	UISetActiveTab(tab1);
+
+	Image minimapImage = {62, 32, 4, (byte*)WorldGetCleanMinimap()};
+    UIElement* minimapElement = UICreateElement(NULL);
+    minimapElement->pos = {6, 12};
+    minimapElement->dim = {62*4, 32*4};
+    minimapElement->flags = UI_MOVABLE | UI_RIGHT;
+    minimap = UICreateImage(minimapElement);
+    minimapElement->borderColor = RGBA_WHITE;
+	minimapElement->borderWidth = 1;
+    minimap->atlas = GenerateTexture(minimapImage, GRAPHICS_PIXELATED);
+    minimap->crop = {0, 0, 1, 1};
+
+    UIElement* minicamera = UICreateElement(minimapElement);
+    minicamera->dim = {31*4, 16*4};
+    minicamera->y = 16*4;
+    minicamera->background = 0x887e7872;
+    minicamera->flags = UI_MOVABLE;
+    minicamera->onMove = MoveCamera;
 
 	TextureId iconAtlas = LoadTexture(scratch, "data/icons.bmp", GRAPHICS_SMOOTH);
 
@@ -138,24 +157,6 @@ void Init(Arena* persist, Arena* scratch) {
 	UIImage* fullIcon = UICreateImage(fullButton);
 	fullIcon->atlas = iconAtlas;
 	fullIcon->crop = {0, 0.5, 0.25, 0.75};
-
-    Image minimapImage = {62*4, 32*4, 4, (byte*)WorldGetCleanMinimap()};
-    UIElement* minimapElement = UICreateElement(NULL);
-    minimapElement->pos = {1400, 12};
-    minimapElement->dim = minimapImage.dimensions;
-    minimapElement->flags = UI_MOVABLE;
-    minimap = UICreateImage(minimapElement);
-    minimapElement->borderColor = RGBA_WHITE;
-	minimapElement->borderWidth = 1;
-    minimap->atlas = GenerateTexture(minimapImage, GRAPHICS_PIXELATED);
-    minimap->crop = {0, 0, 1, 1};
-
-    UIElement* minicamera = UICreateElement(minimapElement);
-    minicamera->dim = {31*4, 16*4};
-    minicamera->y = 16*4;
-    minicamera->background = 0x887e7872;
-    minicamera->flags = UI_MOVABLE;
-    minicamera->onMove = MoveCamera;
 
     UIElement* sliders = UICreateElement(NULL);
     sliders->background = 0x22413830;

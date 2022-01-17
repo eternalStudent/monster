@@ -55,7 +55,6 @@ void PhysicsUpdate(PhysicalBody* player, Position2* pos, milliseconds deltaTime)
 	pixels_per_millisec_2 jumpForce = LoadExp(-5) + LoadExp(-13)*(*physics.jumpForce);
 	pixels_per_millisec_2 accelaration = LoadExp(-12) + LoadExp(-20)*(*physics.accelaration);
 	pixels_per_millisec maxSpeed = 0.5f + LoadExp(-9)*(*physics.maxSpeed);
-	Position2 prev = *pos;
 
 	if (IsKeyDown(KEY_UP)) {
 		if (player->onGround) {
@@ -207,7 +206,4 @@ void PhysicsUpdate(PhysicalBody* player, Position2* pos, milliseconds deltaTime)
 		pos->y = 500;
 		player->velocity = {};
 	}
-
-	if (prev.x != pos->x || prev.y != pos->y)
-		CameraMoveByPlayer(*pos);
 }
