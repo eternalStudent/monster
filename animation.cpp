@@ -10,8 +10,6 @@ struct RenderObject {
 	pixels radius;
 
 	milliseconds timeSpentInState;
-    byte direction;
-    byte stateColumn;
 };
 
 void AnimationInitPlayer(Arena* arena, RenderObject* player) {
@@ -29,11 +27,13 @@ void Switch(float32* x0, float32* x1) {
 
 void AnimationUpdate(RenderObject* player, PhysicalBody body, milliseconds deltaTime) {
 	bool left = player->crop.x0 > player->crop.x1;
+	player->crop.x0 = MIN(player->crop.x0, player->crop.x1);
+
 	float32 previousState = player->crop.y0;
-	if (body.velocity.x == 0 && body.velocity.y == 0 && body.onGround) {
+	if (body.velocity.x == 0.0f && body.velocity.y == 0.0f && body.onGround) {
 		player->crop.y0 = STATE_IDLE;
 	}
-	if (body.velocity.x != 0 && body.velocity.y == 0 && body.onGround) {
+	if (body.velocity.x != 0.0f && body.velocity.y == 0.0f && body.onGround) {
 		player->crop.y0 = STATE_RUN;
 	}
 	if (body.velocity.y < 0) {
@@ -50,24 +50,23 @@ void AnimationUpdate(RenderObject* player, PhysicalBody body, milliseconds delta
 	else {
 		player->timeSpentInState += deltaTime;
 		if (player->timeSpentInState > 200) {
-			player->stateColumn++;
+			player->crop.x0 += 0.25f;
 			player->timeSpentInState -= 200;
 		}
 
-		if (player->crop.y0 == STATE_FALL && player->stateColumn > 1) {
-			player->stateColumn = 1;
+		if (player->crop.y0 == STATE_FALL && player->crop.x0 > 0.25) {
+			player->crop.x0 = 0.25f;
 		}
 
-		else if (player->stateColumn == 4) {
-			player->stateColumn = 0;
+		else if (player->crop.x0 == 1.0f) {
+			player->crop.x0 = 0.0f;
 		}
 	}
 
-	player->crop.x0 = player->stateColumn * 0.25f;
 	player->crop.x1 = player->crop.x0 + 0.25f;
 	player->crop.y1 = player->crop.y0 + 0.25f;
 
-	if (body.velocity.x < 0 || (body.velocity.x == 0 && left)) {
+	if (body.velocity.x < 0.0f || (body.velocity.x == 0.0f && left)) {
 		Switch(&player->crop.x1, &player->crop.x0);
 	}
 }
