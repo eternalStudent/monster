@@ -6,7 +6,7 @@ inline byte PeekByte(byte** data) {
 	return **data;
 }
 
-inline void Skip(byte** data, ssize distance) {
+inline void Skip(byte** data, int64 distance) {
 	*data+=distance;
 }
 
@@ -94,10 +94,10 @@ inline float64 ReadFloat64BigEndian(byte** data) {
 struct Stream {
    	byte* begin;
    	byte* current;
-   	ssize length;
+   	int64 length;
 };
 
-inline Stream CreateNewStream(byte* data, ssize length) {
+inline Stream CreateNewStream(byte* data, int64 length) {
    	Stream stream;
    	stream.begin = data;
    	stream.current = data;
@@ -105,21 +105,21 @@ inline Stream CreateNewStream(byte* data, ssize length) {
    	return stream;
 }
 
-inline ssize GetPosition(Stream* data) {
-   	return (ssize)(data->begin - data->current);
+inline int64 GetPosition(Stream* data) {
+   	return (int64)(data->begin - data->current);
 }
 
-inline ssize GetPosition(Stream data) {
-   	return (ssize)(data.begin - data.current);
+inline int64 GetPosition(Stream data) {
+   	return (int64)(data.begin - data.current);
 }
 
-inline void Seek(Stream* data, ssize offset) {
-   	Assert(!(offset > data->length || offset < 0));
+inline void Seek(Stream* data, int64 offset) {
+   	ASSERT(!(offset > data->length || offset < 0));
    	data->current = (offset > data->length || offset < 0) ? 
    		data->begin+data->length : data->begin+offset;
 }
 
-inline void Skip(Stream* data, ssize distance) {
+inline void Skip(Stream* data, int64 distance) {
    	Skip(&(data->current), distance);
 }
 
@@ -131,10 +131,10 @@ inline byte PeekByte(Stream* data) {
    	return PeekByte(&(data->current));
 }
 
-inline uint32 ReadUintNBigEndian(Stream* data, int32 n) {
-   	uint32 v = 0;
+inline uint64 ReadUintNBigEndian(Stream* data, int32 n) {
+   	uint64 v = 0;
    	int32 i;
-   	Assert(n >= 1 && n <= 4);
+   	ASSERT(n >= 1 && n <= 4);
    	for (i = 0; i < n; i++)
       	v = (v << 8) | ReadByte(data);
    	return v;
@@ -148,7 +148,7 @@ inline uint32 ReadUint32BigEndian(Stream* data) {
    	return ReadUint32BigEndian(&(data->current));
 }
 
-inline Stream Subrange(const Stream* data, int32 offset, int32 length) {
+inline Stream Subrange(const Stream* data, int64 offset, int64 length) {
    	if (offset < 0 || length < 0 || offset > data->length || length > data->length - offset) 
    		return {};
    	return CreateNewStream(data->begin + offset, length);

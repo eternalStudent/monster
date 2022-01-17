@@ -20,9 +20,9 @@ int32 shiftsigned(uint32 v, int32 shift, int32 bits) {
         v <<= -shift;
     else
         v >>= shift;
-    Assert(v < 256);
+    ASSERT(v < 256);
     v >>= (8 - bits);
-    Assert(bits >= 0 && bits <= 8);
+    ASSERT(bits >= 0 && bits <= 8);
     return (int32)(v * mul_table[bits]) >> shift_table[bits];
 }
 
@@ -129,7 +129,7 @@ int32 ParseBMPHeader(byte** data, BMPHeader* info, Image* image){
 
 #define MAX_DIMENSIONS (1 << 24)
 
-Image LoadBMP(byte* data){
+Image BMPLoadImage(Arena* arena, byte* data){
     byte pal[256][4];
     int32 psize = 0, i, j, width;
     int32 flip_vertically, pad;
@@ -161,10 +161,10 @@ Image LoadBMP(byte* data){
     else
         image.channels = info.ma ? 4 : 3;
 
-    image.data = (byte*)Alloc(image.channels * image.width * image.height);
+    image.data = (byte*)ArenaAlloc(arena, image.channels * image.width * image.height);
     if (info.bpp < 16) {
         int32 z = 0;
-        if (psize == 0 || psize > 256) { Free(image.data); return {}; }
+        if (psize == 0 || psize > 256) { return {}; }
         for (i = 0; i < psize; ++i) {
             pal[i][2] = ReadByte(&data);
             pal[i][1] = ReadByte(&data);
@@ -176,7 +176,7 @@ Image LoadBMP(byte* data){
         if (info.bpp == 1) width = (image.width + 7) >> 3;
         else if (info.bpp == 4) width = (image.width + 1) >> 1;
         else if (info.bpp == 8) width = image.width;
-        else { Free(image.data); return {}; }
+        else { return {}; }
         pad = (-width) & 3;
         if (info.bpp == 1) {
             for (j = 0; j < image.height; ++j) {
@@ -236,13 +236,13 @@ Image LoadBMP(byte* data){
                 easy = 2;
         }
         if (!easy) {
-            if (!info.mr || !info.mg || !info.mb) { Free(image.data); return {}; }
+            if (!info.mr || !info.mg || !info.mb) { return {}; }
             // right shift amt to put high bit in position #7
             rshift = HighBit(info.mr, -1) - 7; rcount = BitCount(info.mr);
             gshift = HighBit(info.mg, -1) - 7; gcount = BitCount(info.mg);
             bshift = HighBit(info.mb, -1) - 7; bcount = BitCount(info.mb);
             ashift = HighBit(info.ma, -1) - 7; acount = BitCount(info.ma);
-            if (rcount > 8 || gcount > 8 || bcount > 8 || acount > 8) { Free(image.data); return {}; }
+            if (rcount > 8 || gcount > 8 || bcount > 8 || acount > 8) { return {}; }
         }
         for (j = 0; j < image.height; ++j) {
             if (easy) {
@@ -291,17 +291,4 @@ Image LoadBMP(byte* data){
     }
 
     return image;
-}
-
-byte* ExpandChannels(byte* buffer, int32 length, uint32 rgb) {
-    uint32* new_buffer = (uint32*)Alloc(length*4);
-    if (new_buffer == NULL) return NULL;
-    for (int32 i = 0; i < length; i++) {
-        new_buffer[i] = (buffer[i] << 24) | rgb;
-    }
-    return (byte*)new_buffer;
-}
-
-byte* ExpandChannels(byte* buffer, int32 length) {
-    return ExpandChannels(buffer, length, 0x00ffffff);
 }
